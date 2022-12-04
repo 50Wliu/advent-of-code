@@ -1,9 +1,7 @@
-use std::{fs, cmp::Ordering};
+use std::cmp::Ordering;
 
 pub fn part_1() -> u32 {
-    let contents = fs::read_to_string("day_02_input.txt")
-        .expect("Something went wrong reading the file");
-
+    let contents = super::utilities::read_input(2);
     contents.lines().map(|line| {
         line.split_whitespace().collect::<Vec<&str>>()
     }).fold(0, |accum, round| {
@@ -30,9 +28,7 @@ pub fn part_1() -> u32 {
 }
 
 pub fn part_2() -> u32 {
-    let contents = fs::read_to_string("day_02_input.txt")
-        .expect("Something went wrong reading the file");
-
+    let contents = super::utilities::read_input(2);
     contents.lines().map(|line| {
         line.split_whitespace().collect::<Vec<&str>>()
     }).fold(0, |accum, round| {

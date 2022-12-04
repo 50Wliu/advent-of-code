@@ -1,5 +1,3 @@
-use std::fs;
-
 pub fn part_1() -> u32 {
     let elf_calories = calculate_calories_per_elf();
     *elf_calories.first().expect("Vector should be non-empty")
@@ -11,9 +9,7 @@ pub fn part_2() -> u32 {
 }
 
 fn calculate_calories_per_elf() -> Vec<u32> {
-    let contents = fs::read_to_string("day_01_input.txt")
-        .expect("Something went wrong reading the file");
-
+    let contents = super::utilities::read_input(1);
     let mut calories_by_elf = contents.lines().fold(vec![0], |mut accum, line| {
         if line.is_empty() {
             accum.push(0);
