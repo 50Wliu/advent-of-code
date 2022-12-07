@@ -11,10 +11,10 @@ pub fn part_2() -> usize {
 }
 
 fn find_first_unique_sequence(contents: String, len: usize) -> Option<usize> {
-    let mut search = contents.chars().take(len - 1).collect::<VecDeque<char>>();
+    let mut search = contents.chars().take(len - 1).collect::<VecDeque<_>>();
     for (i, ch) in contents.chars().skip(len - 1).enumerate() {
         search.push_back(ch);
-        let hashset = search.iter().collect::<HashSet<&char>>();
+        let hashset = search.iter().collect::<HashSet<_>>();
         if hashset.len() == len {
             return Some(i + len);
         }
