@@ -20,7 +20,7 @@ where
     let contents = contents.skip_while(|c| c.is_whitespace());
     let command = contents.take_while(|c| *c != '$').collect::<String>();
     if command.len() > 0 {
-        return Some(command.parse::<Command>().expect("Command should be valid"));
+        return Some(command.parse().expect("Command should be valid"));
     }
     None
 }
@@ -44,7 +44,7 @@ impl FromStr for DirEntry {
                 return Ok(DirEntry::Directory(name.to_string(), Vec::new(), 0));
             }
 
-            if let Ok(size) = size.parse::<u32>() {
+            if let Ok(size) = size.parse() {
                 return Ok(DirEntry::File(name.to_string(), size));
             }
         }
