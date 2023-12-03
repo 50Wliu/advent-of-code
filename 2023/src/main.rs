@@ -7,5 +7,5 @@ fn main() {
     println!("{}", day_01::part_1());
     println!("{}", day_01::part_2());
     println!("{}", day_02::part_1());
-    // println!("{}", day_01::part_2());
+    println!("{}", day_02::part_2());
 }

@@ -10,13 +10,33 @@ pub fn part_1() -> u32 {
     
     let contents = utilities::read_input(2);
     let games: Vec<Game> = contents.lines().map(|line| line.parse::<Game>().unwrap()).collect();
-    let valid_games = games.iter().filter(|game| is_valid(game, &bag));
+    let valid_games = games.iter().filter(|game| 
+        game.sets.iter().all(|set| set.red <= bag.red && set.green <= bag.green && set.blue <= bag.blue));
     valid_games.fold(0, |acc, game| acc + game.id)
 }
 
 pub fn part_2() -> u32 {
-    let _contents = utilities::read_input(2);
-    0
+    let contents = utilities::read_input(2);
+    let games: Vec<Game> = contents.lines().map(|line| line.parse::<Game>().unwrap()).collect();
+    games.iter().map(|game| {
+        let min_bag = game.sets.iter().fold(Set { red: 0, green: 0, blue: 0 }, |mut acc, set| {
+            if set.red > acc.red {
+                acc.red = set.red;
+            }
+
+            if set.green > acc.green {
+                acc.green = set.green;
+            }
+
+            if set.blue > acc.blue {
+                acc.blue = set.blue;
+            }
+
+            acc
+        });
+
+        min_bag.red * min_bag.green * min_bag.blue
+    }).sum()
 }
 
 struct Game {
@@ -82,8 +102,4 @@ impl FromStr for Set {
         }
         Ok(result)
     }
-}
-
-fn is_valid(game: &Game, bag: &Set) -> bool {
-    game.sets.iter().all(|set| set.red <= bag.red && set.green <= bag.green && set.blue <= bag.blue)
 }
