@@ -1,6 +1,7 @@
 pub mod day_01;
 pub mod day_02;
 pub mod day_03;
+pub mod day_04;
 
 pub mod utilities;
 
@@ -24,6 +25,7 @@ fn main() {
         Vec::from([day_01::part_1, day_01::part_2]),
         Vec::from([day_02::part_1, day_02::part_2]),
         Vec::from([day_03::part_1, day_03::part_2]),
+        Vec::from([day_04::part_1, day_04::part_2]),
     ]);
 
     let mut days_to_run = 1..=puzzles.len();

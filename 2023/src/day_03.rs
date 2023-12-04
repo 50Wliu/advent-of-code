@@ -19,7 +19,7 @@ pub fn part_1() -> u32 {
         }
 
         if !current_num.is_empty() {
-            nums.push((Range {start: line.1.len() - current_num.len(), end: line.1.len()}, current_num.parse::<u32>().unwrap()));
+            nums.push((line.1.len() - current_num.len()..line.1.len(), current_num.parse::<u32>().unwrap()));
             current_num.clear();
         }
 
