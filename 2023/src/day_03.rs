@@ -1,8 +1,6 @@
-use crate::utilities;
 use std::ops::Range;
 
-pub fn part_1() -> u32 {
-    let contents = utilities::read_input(3);
+pub fn part_1(contents: &String) -> u32 {
     let lines = contents.lines().collect::<Vec<_>>();
     let mut iter = lines.iter().enumerate();
     let mut result: u32 = 0;
@@ -32,8 +30,7 @@ pub fn part_1() -> u32 {
     result
 }
 
-pub fn part_2() -> u32 {
-    let contents = utilities::read_input(3);
+pub fn part_2(contents: &String) -> u32 {
     let lines = contents.lines().collect::<Vec<_>>();
     let mut iter = lines.iter().enumerate();
     let mut result: u32 = 0;

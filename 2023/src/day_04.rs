@@ -1,8 +1,6 @@
-use crate::utilities;
 use std::str::FromStr;
 
-pub fn part_1() -> u32 {
-    let contents = utilities::read_input(4);
+pub fn part_1(contents: &String) -> u32 {
     contents
         .lines()
         .map(|line| line.parse::<Card>().unwrap())
@@ -20,8 +18,7 @@ pub fn part_1() -> u32 {
         })
 }
 
-pub fn part_2() -> u32 {
-    let contents = utilities::read_input(4);
+pub fn part_2(contents: &String) -> u32 {
     let lines = contents.lines();
     let cards = lines.map(|line| line.parse::<Card>().unwrap()).collect::<Vec<_>>();
 

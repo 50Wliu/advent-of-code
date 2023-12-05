@@ -1,7 +1,4 @@
-use crate::utilities;
-
-pub fn part_1() -> u32 {
-    let contents = utilities::read_input(1);
+pub fn part_1(contents: &String) -> u32 {
     contents.lines().fold(0, |acc, line| {
         let matches = line.matches(char::is_numeric).collect::<Vec<&str>>();
         acc +
@@ -10,8 +7,7 @@ pub fn part_1() -> u32 {
     })
 }
 
-pub fn part_2() -> u32 {
-    let contents = utilities::read_input(1);
+pub fn part_2(contents: &String) -> u32 {
     contents.lines().fold(0, |acc, line| {
         let matches = line_to_matches(line);
 
