@@ -21,15 +21,12 @@ struct Cli {
 fn main() {
     let args = Cli::parse();
 
-    let puzzles: Vec<Vec<fn(&String) -> u32>> = Vec::from([
-        Vec::from([day_01::part_1, day_01::part_2]),
-        Vec::from([day_02::part_1, day_02::part_2]),
-        Vec::from([day_03::part_1, day_03::part_2]),
-        Vec::from([day_04::part_1, day_04::part_2]),
-    ]);
-
-    let mut days_to_run = 1..=puzzles.len();
-    let mut parts_to_run = 1..=2;
+    let puzzles: Vec<Vec<fn(&String) -> u32>> = vec![
+        vec![day_01::part_1, day_01::part_2],
+        vec![day_02::part_1, day_02::part_2],
+        vec![day_03::part_1, day_03::part_2],
+        vec![day_04::part_1, day_04::part_2],
+    ];
 
     if args.day > puzzles.len() {
         panic!("day is {} not yet registered in main.rs", args.day);
@@ -38,12 +35,17 @@ fn main() {
         panic!("part {} does not exist", args.part);
     }
 
-    if args.day != 0 {
-        days_to_run = args.day..=args.day;
-    }
-    if args.part != 0 {
-        parts_to_run = args.part..=args.part;
-    }
+    let days_to_run = if args.day != 0 {
+        args.day..=args.day
+    } else {
+        1..=puzzles.len()
+    };
+
+    let parts_to_run = if args.part != 0 {
+        args.part..=args.part
+    } else {
+        1..=2
+    };
 
     for day in days_to_run {
         let contents = utilities::read_input(day);
@@ -52,5 +54,4 @@ fn main() {
             println!("{}", func(&contents));
         }
     }
-}            
-
+}
