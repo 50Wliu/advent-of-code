@@ -18,7 +18,7 @@ struct Cli {
     part: usize,
 }
 
-fn main() {
+fn main() -> Result<(), String> {
     let args = Cli::parse();
 
     let puzzles: Vec<Vec<fn(&String) -> u32>> = vec![
@@ -29,10 +29,11 @@ fn main() {
     ];
 
     if args.day > puzzles.len() {
-        panic!("day is {} not yet registered in main.rs", args.day);
+        return Err(format!("day is {} not yet registered in main.rs", args.day))
+
     }
     if args.part > 2 {
-        panic!("part {} does not exist", args.part);
+        return Err(format!("part {} does not exist", args.part))
     }
 
     let days_to_run = if args.day != 0 {
@@ -54,4 +55,6 @@ fn main() {
             println!("{}", func(&contents));
         }
     }
+
+    Ok(())
 }
