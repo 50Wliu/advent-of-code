@@ -10,12 +10,12 @@ use clap::Parser;
 #[derive(Parser)]
 struct Cli {
     // Day to run
-    #[arg(short='d', long, default_value_t = 0)]
-    day: usize,
+    #[arg(short='d', long)]
+    day: Option<usize>,
 
     // Part to run
-    #[arg(short='p', long, default_value_t = 0)]
-    part: usize,
+    #[arg(short='p', long)]
+    part: Option<usize>,
 }
 
 fn main() -> Result<(), String> {
@@ -28,24 +28,28 @@ fn main() -> Result<(), String> {
         vec![day_04::part_1, day_04::part_2],
     ];
 
-    if args.day > puzzles.len() {
-        return Err(format!("day is {} not yet registered in main.rs", args.day))
-
-    }
-    if args.part > 2 {
-        return Err(format!("part {} does not exist", args.part))
-    }
-
-    let days_to_run = if args.day != 0 {
-        args.day..=args.day
-    } else {
-        1..=puzzles.len()
+    let days_to_run = match args.day {
+        Some(day) if day <= puzzles.len() => {
+            day..=day
+        }
+        Some(day) => {
+            return Err(format!("day {} not yet registered in main.rs", day))
+        }
+        None => {
+            1..=puzzles.len()
+        }
     };
 
-    let parts_to_run = if args.part != 0 {
-        args.part..=args.part
-    } else {
-        1..=2
+    let parts_to_run = match args.part {
+        Some(part) if part == 1 || part == 2 => {
+            part..=part
+        }
+        Some(part) => {
+            return Err(format!("part {} does not exist", part))
+        }
+        None => {
+            1..=2
+        }
     };
 
     for day in days_to_run {
