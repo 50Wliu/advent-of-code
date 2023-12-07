@@ -21,7 +21,7 @@ struct Cli {
 fn main() -> Result<(), String> {
     let args = Cli::parse();
 
-    let puzzles: Vec<Vec<fn(&String) -> u32>> = vec![
+    let puzzles: Vec<Vec<fn(&String) -> Result<u32, String>>> = vec![
         vec![day_01::part_1, day_01::part_2],
         vec![day_02::part_1, day_02::part_2],
         vec![day_03::part_1, day_03::part_2],
@@ -52,7 +52,10 @@ fn main() -> Result<(), String> {
         let contents = utilities::read_input(day);
         for part in parts_to_run.clone() {
             let func = puzzles[day - 1][part - 1];
-            println!("{}", func(&contents));
+            match func(&contents) {
+                Ok(result) => println!("{}", result),
+                Err(err) => eprintln!("ERROR: {}", err),
+            }
         }
     }
 

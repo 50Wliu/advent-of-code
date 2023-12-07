@@ -1,30 +1,32 @@
 use std::str::FromStr;
 
-pub fn part_1(contents: &String) -> u32 {
-    contents
+pub fn part_1(contents: &String) -> Result<u32, String> {
+    let cards = contents
         .lines()
-        .map(|line| line.parse::<Card>().unwrap())
-        .fold(0, |acc, card| {
-            acc + card.winning_numbers
-                .iter()
-                .filter(|winning_number| card.drawn_numbers.contains(winning_number))
-                .fold(0, |acc, _| {
-                    if acc == 0 {
-                        1
-                    } else {
-                        acc * 2
-                    }
-                })
-        })
+        .map(|line| line.parse::<Card>())
+        .collect::<Result<Vec<_>, _>>()?;
+
+    Ok(cards.iter().fold(0, |acc, card| {
+        acc + card.winning_numbers
+            .iter()
+            .filter(|winning_number| card.drawn_numbers.contains(winning_number))
+            .fold(0, |acc, _| {
+                if acc == 0 {
+                    1
+                } else {
+                    acc * 2
+                }
+            })
+    }))
 }
 
-pub fn part_2(contents: &String) -> u32 {
+pub fn part_2(contents: &String) -> Result<u32, String> {
     let lines = contents.lines();
-    let cards = lines.map(|line| line.parse::<Card>().unwrap()).collect::<Vec<_>>();
+    let cards = lines.map(|line| line.parse::<Card>()).collect::<Result<Vec<_>, _>>()?;
 
     let mut card_copies = vec![0; cards.len()];
 
-    cards.iter().fold(0, |acc, card| {
+    Ok(cards.iter().fold(0, |acc, card| {
         let copies = card.winning_numbers
             .iter()
             .filter(|winning_number| card.drawn_numbers.contains(winning_number))
@@ -34,7 +36,7 @@ pub fn part_2(contents: &String) -> u32 {
         }
 
         acc + 1 + card_copies[card.index - 1]
-    })
+    }))
 }
 
 #[derive(Debug)]
@@ -44,11 +46,8 @@ struct Card {
     drawn_numbers: Vec<u32>,
 }
 
-#[derive(Debug)]
-struct ParseCardError {}
-
 impl FromStr for Card {
-    type Err = ParseCardError;
+    type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut segments = s.split(": ");
@@ -64,6 +63,6 @@ impl FromStr for Card {
                 }
             }
         }
-        Err(ParseCardError {})
+        Err("Invalid card".to_string())
     }
 }

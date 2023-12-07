@@ -1,6 +1,6 @@
 use std::ops::Range;
 
-pub fn part_1(contents: &String) -> u32 {
+pub fn part_1(contents: &String) -> Result<u32, String> {
     let lines = contents.lines().collect::<Vec<_>>();
     let mut iter = lines.iter().enumerate();
     let mut result: u32 = 0;
@@ -11,33 +11,36 @@ pub fn part_1(contents: &String) -> u32 {
             if char.is_digit(10) {
                 current_num += &char.to_string();
             } else if !current_num.is_empty() {
-                nums.push((i - current_num.len()..i, current_num.parse::<u32>().unwrap()));
+                nums.push((i - current_num.len()..i, current_num.parse::<u32>().map_err(|err| err.to_string())?));
                 current_num.clear();
             }
         }
 
         if !current_num.is_empty() {
-            nums.push((line.1.len() - current_num.len()..line.1.len(), current_num.parse::<u32>().unwrap()));
+            nums.push((line.1.len() - current_num.len()..line.1.len(), current_num.parse::<u32>().map_err(|err| err.to_string())?));
             current_num.clear();
         }
 
         for (range, num) in nums.iter() {
-            if !get_adjacents(&lines, line.0, range, &|c| !c.is_digit(10) && c != '.').is_empty() {
+            let adjacents = get_adjacents(&lines, line.0, range, &|c| !c.is_digit(10) && c != '.')
+                .ok_or("Could not get adjacents".to_string())?;
+            if !adjacents.is_empty() {
                 result += num;
             }
         }
     }
-    result
+    Ok(result)
 }
 
-pub fn part_2(contents: &String) -> u32 {
+pub fn part_2(contents: &String) -> Result<u32, String> {
     let lines = contents.lines().collect::<Vec<_>>();
     let mut iter = lines.iter().enumerate();
     let mut result: u32 = 0;
     while let Some(line) = iter.next() {
         let matches = line.1.match_indices('*');
         for (index, _) in matches {
-            let adjacents = get_adjacents(&lines, line.0, &(index..index + 1), &|c| c.is_digit(10));
+            let adjacents = get_adjacents(&lines, line.0, &(index..index + 1), &|c| c.is_digit(10))
+                .ok_or("Could not get adjacents".to_string())?;
             let mut nums: Vec<u32> = vec![];
             if adjacents.len() == 2 {
                 for adjacent in adjacents {
@@ -67,7 +70,7 @@ pub fn part_2(contents: &String) -> u32 {
                             }
                         }
 
-                        nums.push(current_num.parse::<u32>().unwrap());
+                        nums.push(current_num.parse::<u32>().map_err(|err| err.to_string())?);
                     } else {
                         let mut current_num: String = String::new();
                         if adjacent.col < index {
@@ -90,24 +93,24 @@ pub fn part_2(contents: &String) -> u32 {
                             }
                         }
 
-                        nums.push(current_num.parse::<u32>().unwrap());
+                        nums.push(current_num.parse::<u32>().map_err(|err| err.to_string())?);
                     }
                 }
                 result += nums.iter().product::<u32>()
             }
         }
     }
-    result
+    Ok(result)
 }
 
 struct Point {
     row: usize,
-    col: usize, 
+    col: usize,
 }
 
-fn get_adjacents(board: &Vec<&str>, row: usize, range: &Range<usize>, matcher: &dyn Fn(char) -> bool) -> Vec<Point> {
+fn get_adjacents(board: &Vec<&str>, row: usize, range: &Range<usize>, matcher: &dyn Fn(char) -> bool) -> Option<Vec<Point>> {
     let mut results = vec![];
-    let line = board.get(row).unwrap();
+    let line = board.get(row)?;
 
     if range.start > 0 && line.chars().nth(range.start - 1).is_some_and(matcher) {
         results.push(Point {row, col: range.start - 1});
@@ -119,13 +122,13 @@ fn get_adjacents(board: &Vec<&str>, row: usize, range: &Range<usize>, matcher: &
 
     // Above
     if row > 0 {
-        let above = board.get(row - 1).unwrap();
+        let above = board.get(row - 1)?;
         let start = if range.start == 0 {
             0
         } else {
             range.start - 1
         };
-            
+
         let end = if range.end == above.len() {
             above.len()
         } else {
@@ -135,7 +138,7 @@ fn get_adjacents(board: &Vec<&str>, row: usize, range: &Range<usize>, matcher: &
         let matches = above[start..end].match_indices(matcher);
         let mut last_i: Option<usize> = None;
         for (i, _) in matches {
-            if last_i.is_none() || i != last_i.unwrap() + 1 {
+            if last_i.is_none() || i != last_i? + 1 {
                 results.push(Point{row: row - 1, col: i + start});
             }
             last_i = Some(i);
@@ -159,11 +162,11 @@ fn get_adjacents(board: &Vec<&str>, row: usize, range: &Range<usize>, matcher: &
         let matches = below[start..end].match_indices(matcher);
         let mut last_i: Option<usize> = None;
         for (i, _) in matches {
-            if last_i.is_none() || i != last_i.unwrap() + 1 {
+            if last_i.is_none() || i != last_i? + 1 {
                 results.push(Point {row: row + 1, col: i + start});
             }
             last_i = Some(i);
         }
     }
-    results
+    Some(results)
 }
