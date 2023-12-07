@@ -52,10 +52,18 @@ impl FromStr for Card {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut segments = s.split(": ");
-        let index = segments.next().unwrap()[4..].trim().parse::<usize>().unwrap();
-        let card_segments = segments.next().unwrap().split(" | ").collect::<Vec<_>>();
-        let winning_numbers = card_segments[0].split_whitespace().map(|x| x.parse::<u32>().unwrap()).collect();
-        let drawn_numbers = card_segments[1].split_whitespace().map(|x| x.parse::<u32>().unwrap()).collect();
-        Ok(Card { index, winning_numbers, drawn_numbers })
+        if let (Some(raw_index), Some(raw_card_segments)) = (segments.next(), segments.next()) {
+            if let Some(index_with_whitespace) = raw_index.strip_prefix("Card ") {
+                if let Ok(index) = index_with_whitespace.trim().parse::<usize>() {
+                    let mut cards = raw_card_segments.split(" | ").map(|segment| {
+                        segment.split_whitespace().map(|x| x.parse::<u32>()).collect::<Result<Vec<_>, _>>()
+                    });
+                    if let (Some(Ok(winning_numbers)), Some(Ok(drawn_numbers))) = (cards.next(), cards.next()) {
+                        return Ok(Card { index, winning_numbers, drawn_numbers });
+                    }
+                }
+            }
+        }
+        Err(ParseCardError {})
     }
 }
