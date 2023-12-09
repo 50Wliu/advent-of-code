@@ -38,14 +38,14 @@ pub fn part_2(contents: &str) -> Result<u32, String> {
                 }
             });
 
-        let first = match_to_int(&min.1).ok_or("No first match".to_string())?;
-        let last = match_to_int(&max.1).ok_or("No last match".to_string())?;
+        let first = match_to_int(min.1).ok_or("No first match".to_string())?;
+        let last = match_to_int(max.1).ok_or("No last match".to_string())?;
         Ok(acc + 10 * first + last)
     })
 }
 
 fn match_to_int(m: &str) -> Option<u32> {
-    match m.chars().nth(0)?.to_digit(10) {
+    match m.chars().next()?.to_digit(10) {
         Some(digit) => Some(digit),
         None => match m {
             "one" => Some(1),

@@ -2,13 +2,13 @@ use std::ops::Range;
 
 pub fn part_1(contents: &str) -> Result<u32, String> {
     let lines = contents.lines().collect::<Vec<_>>();
-    let mut iter = lines.iter().enumerate();
+    let iter = lines.iter().enumerate();
     let mut result = 0;
-    while let Some(line) = iter.next() {
+    for line in iter {
         let mut nums: Vec<(Range<usize>, u32)> = vec![];
         let mut current_num: String = String::new();
         for (i, char) in line.1.chars().enumerate() {
-            if char.is_digit(10) {
+            if char.is_ascii_digit() {
                 current_num += &char.to_string();
             } else if !current_num.is_empty() {
                 nums.push((
@@ -28,8 +28,9 @@ pub fn part_1(contents: &str) -> Result<u32, String> {
         }
 
         for (range, num) in nums.iter() {
-            let adjacents = get_adjacents(&lines, line.0, range, &|c| !c.is_digit(10) && c != '.')
-                .ok_or("Could not get adjacents".to_string())?;
+            let adjacents =
+                get_adjacents(&lines, line.0, range, &|c| !c.is_ascii_digit() && c != '.')
+                    .ok_or("Could not get adjacents".to_string())?;
             if !adjacents.is_empty() {
                 result += num;
             }
@@ -40,13 +41,14 @@ pub fn part_1(contents: &str) -> Result<u32, String> {
 
 pub fn part_2(contents: &str) -> Result<u32, String> {
     let lines = contents.lines().collect::<Vec<_>>();
-    let mut iter = lines.iter().enumerate();
+    let iter = lines.iter().enumerate();
     let mut result = 0;
-    while let Some(line) = iter.next() {
+    for line in iter {
         let matches = line.1.match_indices('*');
         for (index, _) in matches {
-            let adjacents = get_adjacents(&lines, line.0, &(index..index + 1), &|c| c.is_digit(10))
-                .ok_or("Could not get adjacents".to_string())?;
+            let adjacents =
+                get_adjacents(&lines, line.0, &(index..index + 1), &|c| c.is_ascii_digit())
+                    .ok_or("Could not get adjacents".to_string())?;
             let mut nums: Vec<u32> = vec![];
             if adjacents.len() == 2 {
                 for adjacent in adjacents {
@@ -59,7 +61,7 @@ pub fn part_2(contents: &str) -> Result<u32, String> {
                         let line_halves = lines[adjacent.row].split_at(split_col);
                         let mut current_num: String = String::new();
                         for char in line_halves.0.chars().rev() {
-                            if char.is_digit(10) {
+                            if char.is_ascii_digit() {
                                 current_num += &char.to_string();
                             } else {
                                 break;
@@ -69,7 +71,7 @@ pub fn part_2(contents: &str) -> Result<u32, String> {
                         current_num = current_num.chars().rev().collect();
 
                         for char in line_halves.1.chars() {
-                            if char.is_digit(10) {
+                            if char.is_ascii_digit() {
                                 current_num += &char.to_string();
                             } else {
                                 break;
@@ -81,7 +83,7 @@ pub fn part_2(contents: &str) -> Result<u32, String> {
                         let mut current_num: String = String::new();
                         if adjacent.col < index {
                             for char in line.1[0..=adjacent.col].chars().rev() {
-                                if char.is_digit(10) {
+                                if char.is_ascii_digit() {
                                     current_num += &char.to_string();
                                 } else {
                                     break;
@@ -91,7 +93,7 @@ pub fn part_2(contents: &str) -> Result<u32, String> {
                             current_num = current_num.chars().rev().collect();
                         } else {
                             for char in line.1[adjacent.col..].chars() {
-                                if char.is_digit(10) {
+                                if char.is_ascii_digit() {
                                     current_num += &char.to_string();
                                 } else {
                                     break;
@@ -115,7 +117,7 @@ struct Point {
 }
 
 fn get_adjacents(
-    board: &Vec<&str>,
+    board: &[&str],
     row: usize,
     range: &Range<usize>,
     matcher: &dyn Fn(char) -> bool,
