@@ -1,8 +1,8 @@
 pub fn part_1(contents: &str) -> Result<u32, String> {
     contents.lines().try_fold(0, |acc, line| {
-        let mut matches = line.matches(char::is_numeric);
+        let matches = line.matches(char::is_numeric).collect::<Vec<_>>();
         let first_digit = matches
-            .next()
+            .first()
             .ok_or("No first match".to_string())?
             .parse::<u32>()
             .map_err(|err| err.to_string())?;
