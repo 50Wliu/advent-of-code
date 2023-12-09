@@ -53,7 +53,7 @@ impl FromStr for Card {
             .next()
             .ok_or("Missing card index")?
             .strip_prefix("Card ")
-            .ok_or("Missing `card` prefix")?
+            .ok_or("Missing `Card` prefix")?
             .trim()
             .parse::<usize>()
             .map_err(|err| err.to_string())?;

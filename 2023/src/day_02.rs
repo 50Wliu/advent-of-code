@@ -75,9 +75,9 @@ impl FromStr for Game {
         let game = segments.next().ok_or("Missing game".to_string())?;
         let sets = segments.next().ok_or("Missing sets".to_string())?;
         let id = game
-            .split_whitespace()
-            .nth(1)
-            .ok_or("Missing game id".to_string())?
+            .strip_prefix("Game ")
+            .ok_or("Missing `Game` prefix".to_string())?
+            .trim()
             .parse::<u32>()
             .map_err(|err| err.to_string())?;
         let sets = sets
