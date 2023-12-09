@@ -53,7 +53,7 @@ fn main() -> Result<(), String> {
     };
 
     for day in days_to_run {
-        let contents = utilities::read_input(day);
+        let contents = utilities::read_input(day)?;
         for part in parts_to_run.clone() {
             let func = puzzles[day - 1][part - 1];
             println!("{}", func(&contents)?);
