@@ -51,18 +51,20 @@ impl FromStr for Card {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut segments = s.split(": ");
-        if let (Some(raw_index), Some(raw_card_segments)) = (segments.next(), segments.next()) {
-            if let Some(index_with_whitespace) = raw_index.strip_prefix("Card ") {
-                if let Ok(index) = index_with_whitespace.trim().parse::<usize>() {
-                    let mut cards = raw_card_segments.split(" | ").map(|segment| {
-                        segment.split_whitespace().map(|x| x.parse::<u32>()).collect::<Result<Vec<_>, _>>()
-                    });
-                    if let (Some(Ok(winning_numbers)), Some(Ok(drawn_numbers))) = (cards.next(), cards.next()) {
-                        return Ok(Card { index, winning_numbers, drawn_numbers });
-                    }
-                }
-            }
-        }
-        Err("Invalid card".to_string())
+        let index = segments.next().ok_or("Missing card index")?
+            .strip_prefix("Card ").ok_or("Missing `card` prefix")?
+            .trim().parse::<usize>().map_err(|err| err.to_string())?;
+        let mut numbers = segments.next().ok_or("Missing numbers")?
+            .split(" | ");
+        let winning_numbers = numbers.next().ok_or("Missing winning numbers")?
+            .split_whitespace().map(|card| card.parse::<u32>()).collect::<Result<Vec<_>, _>>().map_err(|err| err.to_string())?;
+        let drawn_numbers = numbers.next().ok_or("Missing drawn numbers")?
+            .split_whitespace().map(|card| card.parse::<u32>()).collect::<Result<Vec<_>, _>>().map_err(|err| err.to_string())?;
+
+        Ok(Card {
+            index,
+            winning_numbers,
+            drawn_numbers,
+        })
     }
 }

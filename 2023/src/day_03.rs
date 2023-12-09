@@ -3,7 +3,7 @@ use std::ops::Range;
 pub fn part_1(contents: &str) -> Result<u32, String> {
     let lines = contents.lines().collect::<Vec<_>>();
     let mut iter = lines.iter().enumerate();
-    let mut result: u32 = 0;
+    let mut result = 0;
     while let Some(line) = iter.next() {
         let mut nums: Vec<(Range<usize>, u32)> = vec![];
         let mut current_num: String = String::new();
@@ -35,7 +35,7 @@ pub fn part_1(contents: &str) -> Result<u32, String> {
 pub fn part_2(contents: &str) -> Result<u32, String> {
     let lines = contents.lines().collect::<Vec<_>>();
     let mut iter = lines.iter().enumerate();
-    let mut result: u32 = 0;
+    let mut result = 0;
     while let Some(line) = iter.next() {
         let matches = line.1.match_indices('*');
         for (index, _) in matches {
