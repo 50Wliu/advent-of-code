@@ -1,4 +1,4 @@
-pub fn part_1(contents: &String) -> Result<u32, String> {
+pub fn part_1(contents: &str) -> Result<u32, String> {
     contents.lines().fold(Ok(0), |acc, line| {
         match acc {
             Ok(acc) => {
@@ -20,7 +20,7 @@ pub fn part_1(contents: &String) -> Result<u32, String> {
     })
 }
 
-pub fn part_2(contents: &String) -> Result<u32, String> {
+pub fn part_2(contents: &str) -> Result<u32, String> {
     contents.lines().fold(Ok(0), |acc, line| {
         match acc {
             Ok(acc) => {
@@ -64,7 +64,7 @@ fn match_to_int(m: &str) -> Option<u32> {
         "eight" => Some(8),
         "nine" => Some(9),
         _ => None
-      }
+    }
   }
 }
 

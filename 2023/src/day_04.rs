@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-pub fn part_1(contents: &String) -> Result<u32, String> {
+pub fn part_1(contents: &str) -> Result<u32, String> {
     let cards = contents
         .lines()
         .map(|line| line.parse::<Card>())
@@ -20,7 +20,7 @@ pub fn part_1(contents: &String) -> Result<u32, String> {
     }))
 }
 
-pub fn part_2(contents: &String) -> Result<u32, String> {
+pub fn part_2(contents: &str) -> Result<u32, String> {
     let lines = contents.lines();
     let cards = lines.map(|line| line.parse::<Card>()).collect::<Result<Vec<_>, _>>()?;
 

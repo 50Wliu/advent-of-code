@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-pub fn part_1(contents: &String) -> Result<u32, String> {
+pub fn part_1(contents: &str) -> Result<u32, String> {
     let bag = Set {
         red: 12,
         green: 13,
@@ -13,7 +13,7 @@ pub fn part_1(contents: &String) -> Result<u32, String> {
     Ok(valid_games.fold(0, |acc, game| acc + game.id))
 }
 
-pub fn part_2(contents: &String) -> Result<u32, String> {
+pub fn part_2(contents: &str) -> Result<u32, String> {
     let games = contents.lines().map(|line| line.parse::<Game>()).collect::<Result<Vec<_>, _>>()?;
     Ok(games.iter().map(|game| {
         let min_bag = game.sets.iter().fold(Set { red: 0, green: 0, blue: 0 }, |mut acc, set| {
