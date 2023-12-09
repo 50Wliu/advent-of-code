@@ -71,10 +71,10 @@ impl FromStr for Set {
         // 4 blue, 16 green, 2 red
 
         let colors = s.split(',').try_fold(HashMap::new(), |mut acc, segment| {
-            let mut colors = segment.split_whitespace();
-            let num = colors.next().ok_or("Missing number".to_string())?
+            let mut num_and_color = segment.split_whitespace();
+            let num = num_and_color.next().ok_or("Missing number".to_string())?
                 .parse::<u32>().map_err(|err| err.to_string())?;
-            let color = colors.next().ok_or("Missing color".to_string())?;
+            let color = num_and_color.next().ok_or("Missing color".to_string())?;
             match acc.insert(color, num) {
                 Some(_) => Err(format!("Duplicate color {}", color).to_string()),
                 None => Ok(acc),
@@ -82,9 +82,9 @@ impl FromStr for Set {
         })?;
 
         Ok(Set {
-            red: *colors.get("red").ok_or("Missing red".to_string())?,
-            green: *colors.get("green").ok_or("Missing green".to_string())?,
-            blue: *colors.get("blue").ok_or("Missing blue".to_string())?,
+            red: *colors.get("red").unwrap_or(&0),
+            green: *colors.get("green").unwrap_or(&0),
+            blue: *colors.get("blue").unwrap_or(&0),
         })
     }
 }
