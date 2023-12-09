@@ -11,13 +11,19 @@ pub fn part_1(contents: &str) -> Result<u32, String> {
             if char.is_digit(10) {
                 current_num += &char.to_string();
             } else if !current_num.is_empty() {
-                nums.push((i - current_num.len()..i, current_num.parse::<u32>().map_err(|err| err.to_string())?));
+                nums.push((
+                    i - current_num.len()..i,
+                    current_num.parse::<u32>().map_err(|err| err.to_string())?,
+                ));
                 current_num.clear();
             }
         }
 
         if !current_num.is_empty() {
-            nums.push((line.1.len() - current_num.len()..line.1.len(), current_num.parse::<u32>().map_err(|err| err.to_string())?));
+            nums.push((
+                line.1.len() - current_num.len()..line.1.len(),
+                current_num.parse::<u32>().map_err(|err| err.to_string())?,
+            ));
             current_num.clear();
         }
 
@@ -108,26 +114,33 @@ struct Point {
     col: usize,
 }
 
-fn get_adjacents(board: &Vec<&str>, row: usize, range: &Range<usize>, matcher: &dyn Fn(char) -> bool) -> Option<Vec<Point>> {
+fn get_adjacents(
+    board: &Vec<&str>,
+    row: usize,
+    range: &Range<usize>,
+    matcher: &dyn Fn(char) -> bool,
+) -> Option<Vec<Point>> {
     let mut results = vec![];
     let line = board.get(row)?;
 
     if range.start > 0 && line.chars().nth(range.start - 1).is_some_and(matcher) {
-        results.push(Point {row, col: range.start - 1});
+        results.push(Point {
+            row,
+            col: range.start - 1,
+        });
     }
 
     if line.chars().nth(range.end).is_some_and(matcher) {
-        results.push(Point {row, col: range.end});
+        results.push(Point {
+            row,
+            col: range.end,
+        });
     }
 
     // Above
     if row > 0 {
         let above = board.get(row - 1)?;
-        let start = if range.start == 0 {
-            0
-        } else {
-            range.start - 1
-        };
+        let start = if range.start == 0 { 0 } else { range.start - 1 };
 
         let end = if range.end == above.len() {
             above.len()
@@ -139,7 +152,10 @@ fn get_adjacents(board: &Vec<&str>, row: usize, range: &Range<usize>, matcher: &
         let mut last_i: Option<usize> = None;
         for (i, _) in matches {
             if last_i.is_none() || i != last_i? + 1 {
-                results.push(Point{row: row - 1, col: i + start});
+                results.push(Point {
+                    row: row - 1,
+                    col: i + start,
+                });
             }
             last_i = Some(i);
         }
@@ -147,11 +163,7 @@ fn get_adjacents(board: &Vec<&str>, row: usize, range: &Range<usize>, matcher: &
 
     // Below
     if let Some(below) = board.get(row + 1) {
-        let start = if range.start == 0 {
-            0
-        } else {
-            range.start - 1
-        };
+        let start = if range.start == 0 { 0 } else { range.start - 1 };
 
         let end = if range.end == below.len() {
             below.len()
@@ -163,7 +175,10 @@ fn get_adjacents(board: &Vec<&str>, row: usize, range: &Range<usize>, matcher: &
         let mut last_i: Option<usize> = None;
         for (i, _) in matches {
             if last_i.is_none() || i != last_i? + 1 {
-                results.push(Point {row: row + 1, col: i + start});
+                results.push(Point {
+                    row: row + 1,
+                    col: i + start,
+                });
             }
             last_i = Some(i);
         }

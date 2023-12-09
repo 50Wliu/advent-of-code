@@ -1,4 +1,4 @@
-use std::{str::FromStr, collections::HashMap};
+use std::{collections::HashMap, str::FromStr};
 
 pub fn part_1(contents: &str) -> Result<u32, String> {
     let bag = Set {
@@ -7,33 +7,52 @@ pub fn part_1(contents: &str) -> Result<u32, String> {
         blue: 14,
     };
 
-    let games = contents.lines().map(|line| line.parse::<Game>()).collect::<Result<Vec<_>, _>>()?;
-    let valid_games = games.iter().filter(|game|
-        game.sets.iter().all(|set| set.red <= bag.red && set.green <= bag.green && set.blue <= bag.blue));
+    let games = contents
+        .lines()
+        .map(|line| line.parse::<Game>())
+        .collect::<Result<Vec<_>, _>>()?;
+    let valid_games = games.iter().filter(|game| {
+        game.sets
+            .iter()
+            .all(|set| set.red <= bag.red && set.green <= bag.green && set.blue <= bag.blue)
+    });
     Ok(valid_games.fold(0, |acc, game| acc + game.id))
 }
 
 pub fn part_2(contents: &str) -> Result<u32, String> {
-    let games = contents.lines().map(|line| line.parse::<Game>()).collect::<Result<Vec<_>, _>>()?;
-    Ok(games.iter().map(|game| {
-        let min_bag = game.sets.iter().fold(Set { red: 0, green: 0, blue: 0 }, |mut acc, set| {
-            if set.red > acc.red {
-                acc.red = set.red;
-            }
+    let games = contents
+        .lines()
+        .map(|line| line.parse::<Game>())
+        .collect::<Result<Vec<_>, _>>()?;
+    Ok(games
+        .iter()
+        .map(|game| {
+            let min_bag = game.sets.iter().fold(
+                Set {
+                    red: 0,
+                    green: 0,
+                    blue: 0,
+                },
+                |mut acc, set| {
+                    if set.red > acc.red {
+                        acc.red = set.red;
+                    }
 
-            if set.green > acc.green {
-                acc.green = set.green;
-            }
+                    if set.green > acc.green {
+                        acc.green = set.green;
+                    }
 
-            if set.blue > acc.blue {
-                acc.blue = set.blue;
-            }
+                    if set.blue > acc.blue {
+                        acc.blue = set.blue;
+                    }
 
-            acc
-        });
+                    acc
+                },
+            );
 
-        min_bag.red * min_bag.green * min_bag.blue
-    }).sum())
+            min_bag.red * min_bag.green * min_bag.blue
+        })
+        .sum())
 }
 
 struct Game {
@@ -55,13 +74,18 @@ impl FromStr for Game {
         let mut segments = s.split(':');
         let game = segments.next().ok_or("Missing game".to_string())?;
         let sets = segments.next().ok_or("Missing sets".to_string())?;
-        let id = game.split_whitespace().skip(1).next().ok_or("Missing game id".to_string())?
-            .parse::<u32>().map_err(|err| err.to_string())?;
-        let sets = sets.split(';').map(|set| set.parse::<Set>()).collect::<Result<Vec<_>,_>>()?;
-        Ok(Game {
-            id,
-            sets,
-        })
+        let id = game
+            .split_whitespace()
+            .skip(1)
+            .next()
+            .ok_or("Missing game id".to_string())?
+            .parse::<u32>()
+            .map_err(|err| err.to_string())?;
+        let sets = sets
+            .split(';')
+            .map(|set| set.parse::<Set>())
+            .collect::<Result<Vec<_>, _>>()?;
+        Ok(Game { id, sets })
     }
 }
 
@@ -72,8 +96,11 @@ impl FromStr for Set {
 
         let colors = s.split(',').try_fold(HashMap::new(), |mut acc, segment| {
             let mut num_and_color = segment.split_whitespace();
-            let num = num_and_color.next().ok_or("Missing number".to_string())?
-                .parse::<u32>().map_err(|err| err.to_string())?;
+            let num = num_and_color
+                .next()
+                .ok_or("Missing number".to_string())?
+                .parse::<u32>()
+                .map_err(|err| err.to_string())?;
             let color = num_and_color.next().ok_or("Missing color".to_string())?;
             match acc.insert(color, num) {
                 Some(_) => Err(format!("Duplicate color {}", color).to_string()),
