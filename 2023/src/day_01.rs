@@ -1,52 +1,42 @@
 pub fn part_1(contents: &str) -> Result<u32, String> {
-    contents.lines().fold(Ok(0), |acc, line| {
-        match acc {
-            Ok(acc) => {
-                let matches = line.matches(char::is_numeric).collect::<Vec<&str>>();
-                Ok(acc +
-                    matches
-                        .first()
-                        .ok_or("No first match".to_string())?
-                        .parse::<u32>()
-                        .map_err(|err| err.to_string())? * 10 +
-                    matches
-                        .last()
-                        .ok_or("No last match".to_string())?
-                        .parse::<u32>()
-                        .map_err(|err| err.to_string())?)
-            }
-            Err(err) => Err(err),
-        }
+    contents.lines().try_fold(0, |acc, line| {
+        let mut matches = line.matches(char::is_numeric);
+        let first_digit = matches
+            .next()
+            .ok_or("No first match".to_string())?
+            .parse::<u32>()
+            .map_err(|err| err.to_string())?;
+        let last_digit = matches
+            .last()
+            .ok_or("No last match".to_string())?
+            .parse::<u32>()
+            .map_err(|err| err.to_string())?;
+        Ok(acc + first_digit * 10 + last_digit)
     })
 }
 
 pub fn part_2(contents: &str) -> Result<u32, String> {
-    contents.lines().fold(Ok(0), |acc, line| {
-        match acc {
-            Ok(acc) => {
-                let matches = line_to_matches(line);
+    contents.lines().try_fold(0, |acc, line| {
+        let matches = line_to_matches(line);
 
-                let max = matches.iter().fold((std::usize::MIN, ""), |acc, (i, value)| {
-                    if i >= &acc.0 {
-                        (*i, value)
-                    } else {
-                        acc
-                    }
-                });
-                let min = matches.iter().fold((std::usize::MAX, ""), |acc, (i, value)| {
-                    if i <= &acc.0 {
-                        (*i, value)
-                    } else {
-                        acc
-                    }
-                });
-
-                let first = match_to_int(&min.1).ok_or("No first match".to_string())?;
-                let last = match_to_int(&max.1).ok_or("No last match".to_string())?;
-                Ok(acc + 10 * first + last)
+        let max = matches.iter().fold((std::usize::MIN, ""), |acc, (i, value)| {
+            if i >= &acc.0 {
+                (*i, value)
+            } else {
+                acc
             }
-            Err(err) => Err(err),
-        }
+        });
+        let min = matches.iter().fold((std::usize::MAX, ""), |acc, (i, value)| {
+            if i <= &acc.0 {
+                (*i, value)
+            } else {
+                acc
+            }
+        });
+
+        let first = match_to_int(&min.1).ok_or("No first match".to_string())?;
+        let last = match_to_int(&max.1).ok_or("No last match".to_string())?;
+        Ok(acc + 10 * first + last)
     })
 }
 
