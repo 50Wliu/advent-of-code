@@ -59,15 +59,15 @@ fn match_to_int(m: &str) -> Option<u32> {
 }
 
 fn line_to_matches(line: &str) -> Vec<(usize, &str)> {
-    let mut matches: Vec<_> = line.match_indices(char::is_numeric).collect();
-    matches.append(&mut line.match_indices("one").collect());
-    matches.append(&mut line.match_indices("two").collect());
-    matches.append(&mut line.match_indices("three").collect());
-    matches.append(&mut line.match_indices("four").collect());
-    matches.append(&mut line.match_indices("five").collect());
-    matches.append(&mut line.match_indices("six").collect());
-    matches.append(&mut line.match_indices("seven").collect());
-    matches.append(&mut line.match_indices("eight").collect());
-    matches.append(&mut line.match_indices("nine").collect());
-    matches
+    line.match_indices(char::is_numeric)
+        .chain(line.match_indices("one"))
+        .chain(line.match_indices("two"))
+        .chain(line.match_indices("three"))
+        .chain(line.match_indices("four"))
+        .chain(line.match_indices("five"))
+        .chain(line.match_indices("six"))
+        .chain(line.match_indices("seven"))
+        .chain(line.match_indices("eight"))
+        .chain(line.match_indices("nine"))
+        .collect()
 }
