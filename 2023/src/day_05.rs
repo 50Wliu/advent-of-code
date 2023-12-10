@@ -1,5 +1,4 @@
 use std::ops::Range;
-use std::str::Lines;
 
 struct Mapping {
     offset: i64,
@@ -10,9 +9,9 @@ pub fn part_1(contents: &str) -> Result<u64, String> {
     let mut lines = contents.lines();
     let seeds = lines
         .next()
-        .ok_or("Missing seeds".to_string())?
+        .ok_or("Missing seeds")?
         .strip_prefix("seeds: ")
-        .ok_or("Missing `seeds: ` prefix".to_string())?
+        .ok_or("Missing `seeds: ` prefix")?
         .split_whitespace()
         .map(|seed| seed.parse::<u64>().map_err(|err| err.to_string()))
         .collect::<Result<Vec<_>, _>>()?;
@@ -29,9 +28,9 @@ pub fn part_2(contents: &str) -> Result<u64, String> {
     let mut lines = contents.lines();
     let seeds = lines
         .next()
-        .ok_or("Missing seeds".to_string())?
+        .ok_or("Missing seeds")?
         .strip_prefix("seeds: ")
-        .ok_or("Missing `seeds: ` prefix".to_string())?
+        .ok_or("Missing `seeds: ` prefix")?
         .split_whitespace()
         .collect::<Vec<_>>()
         .chunks_exact(2)
@@ -61,7 +60,7 @@ pub fn part_2(contents: &str) -> Result<u64, String> {
     }))
 }
 
-fn parse_mappings(lines: Lines) -> Result<Vec<Vec<Mapping>>, String> {
+fn parse_mappings<'a>(lines: impl Iterator<Item = &'a str>) -> Result<Vec<Vec<Mapping>>, String> {
     let mut mappings = vec![];
     for line in lines {
         if line.is_empty() {
@@ -92,7 +91,7 @@ fn parse_mappings(lines: Lines) -> Result<Vec<Vec<Mapping>>, String> {
 
         mappings
             .last_mut()
-            .ok_or("No last element".to_string())?
+            .ok_or("No last element")?
             .push(Mapping {
                 offset: destination_start as i64 - source_start as i64,
                 range: source_start..source_start + range,
@@ -104,8 +103,8 @@ fn parse_mappings(lines: Lines) -> Result<Vec<Vec<Mapping>>, String> {
 
 fn seed_to_location(seed: u64, mappings: &[Vec<Mapping>]) -> u64 {
     let mut location = seed as i64;
-    for mapping in mappings.iter() {
-        for map in mapping.iter() {
+    for mapping in mappings {
+        for map in mapping {
             if map.range.contains(&(location as u64)) {
                 location += map.offset;
                 break;
