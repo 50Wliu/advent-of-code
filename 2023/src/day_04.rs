@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-pub fn part_1(contents: &str) -> Result<u32, String> {
+pub fn part_1(contents: &str) -> Result<u64, String> {
     let cards = contents
         .lines()
         .map(|line| line.parse::<Card>())
@@ -15,7 +15,7 @@ pub fn part_1(contents: &str) -> Result<u32, String> {
     }))
 }
 
-pub fn part_2(contents: &str) -> Result<u32, String> {
+pub fn part_2(contents: &str) -> Result<u64, String> {
     let lines = contents.lines();
     let cards = lines
         .map(|line| line.parse::<Card>())
@@ -40,8 +40,8 @@ pub fn part_2(contents: &str) -> Result<u32, String> {
 #[derive(Debug)]
 struct Card {
     index: usize,
-    winning_numbers: Vec<u32>,
-    drawn_numbers: Vec<u32>,
+    winning_numbers: Vec<u64>,
+    drawn_numbers: Vec<u64>,
 }
 
 impl FromStr for Card {
@@ -62,14 +62,14 @@ impl FromStr for Card {
             .next()
             .ok_or("Missing winning numbers")?
             .split_whitespace()
-            .map(|card| card.parse::<u32>())
+            .map(|card| card.parse::<u64>())
             .collect::<Result<Vec<_>, _>>()
             .map_err(|err| err.to_string())?;
         let drawn_numbers = numbers
             .next()
             .ok_or("Missing drawn numbers")?
             .split_whitespace()
-            .map(|card| card.parse::<u32>())
+            .map(|card| card.parse::<u64>())
             .collect::<Result<Vec<_>, _>>()
             .map_err(|err| err.to_string())?;
 

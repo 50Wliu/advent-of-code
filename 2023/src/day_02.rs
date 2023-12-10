@@ -1,6 +1,6 @@
 use std::{collections::HashMap, str::FromStr};
 
-pub fn part_1(contents: &str) -> Result<u32, String> {
+pub fn part_1(contents: &str) -> Result<u64, String> {
     let bag = Set {
         red: 12,
         green: 13,
@@ -19,7 +19,7 @@ pub fn part_1(contents: &str) -> Result<u32, String> {
     Ok(valid_games.fold(0, |acc, game| acc + game.id))
 }
 
-pub fn part_2(contents: &str) -> Result<u32, String> {
+pub fn part_2(contents: &str) -> Result<u64, String> {
     let games = contents
         .lines()
         .map(|line| line.parse::<Game>())
@@ -56,15 +56,15 @@ pub fn part_2(contents: &str) -> Result<u32, String> {
 }
 
 struct Game {
-    id: u32,
+    id: u64,
     sets: Vec<Set>,
 }
 
 #[derive(Debug)]
 struct Set {
-    red: u32,
-    blue: u32,
-    green: u32,
+    red: u64,
+    blue: u64,
+    green: u64,
 }
 
 impl FromStr for Game {
@@ -78,7 +78,7 @@ impl FromStr for Game {
             .strip_prefix("Game ")
             .ok_or("Missing `Game` prefix".to_string())?
             .trim()
-            .parse::<u32>()
+            .parse::<u64>()
             .map_err(|err| err.to_string())?;
         let sets = sets
             .split(';')
@@ -98,7 +98,7 @@ impl FromStr for Set {
             let num = num_and_color
                 .next()
                 .ok_or("Missing number".to_string())?
-                .parse::<u32>()
+                .parse::<u64>()
                 .map_err(|err| err.to_string())?;
             let color = num_and_color.next().ok_or("Missing color".to_string())?;
             match acc.insert(color, num) {

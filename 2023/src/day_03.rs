@@ -1,11 +1,11 @@
 use std::ops::Range;
 
-pub fn part_1(contents: &str) -> Result<u32, String> {
+pub fn part_1(contents: &str) -> Result<u64, String> {
     let lines = contents.lines().collect::<Vec<_>>();
     let iter = lines.iter().enumerate();
     let mut result = 0;
     for line in iter {
-        let mut nums: Vec<(Range<usize>, u32)> = vec![];
+        let mut nums: Vec<(Range<usize>, u64)> = vec![];
         let mut current_num: String = String::new();
         for (i, char) in line.1.chars().enumerate() {
             if char.is_ascii_digit() {
@@ -13,7 +13,7 @@ pub fn part_1(contents: &str) -> Result<u32, String> {
             } else if !current_num.is_empty() {
                 nums.push((
                     i - current_num.len()..i,
-                    current_num.parse::<u32>().map_err(|err| err.to_string())?,
+                    current_num.parse::<u64>().map_err(|err| err.to_string())?,
                 ));
                 current_num.clear();
             }
@@ -22,7 +22,7 @@ pub fn part_1(contents: &str) -> Result<u32, String> {
         if !current_num.is_empty() {
             nums.push((
                 line.1.len() - current_num.len()..line.1.len(),
-                current_num.parse::<u32>().map_err(|err| err.to_string())?,
+                current_num.parse::<u64>().map_err(|err| err.to_string())?,
             ));
             current_num.clear();
         }
@@ -39,7 +39,7 @@ pub fn part_1(contents: &str) -> Result<u32, String> {
     Ok(result)
 }
 
-pub fn part_2(contents: &str) -> Result<u32, String> {
+pub fn part_2(contents: &str) -> Result<u64, String> {
     let lines = contents.lines().collect::<Vec<_>>();
     let iter = lines.iter().enumerate();
     let mut result = 0;
@@ -49,7 +49,7 @@ pub fn part_2(contents: &str) -> Result<u32, String> {
             let adjacents =
                 get_adjacents(&lines, line.0, &(index..index + 1), &|c| c.is_ascii_digit())
                     .ok_or("Could not get adjacents".to_string())?;
-            let mut nums: Vec<u32> = vec![];
+            let mut nums: Vec<u64> = vec![];
             if adjacents.len() == 2 {
                 for adjacent in adjacents {
                     if adjacent.row != line.0 {
@@ -78,7 +78,7 @@ pub fn part_2(contents: &str) -> Result<u32, String> {
                             }
                         }
 
-                        nums.push(current_num.parse::<u32>().map_err(|err| err.to_string())?);
+                        nums.push(current_num.parse::<u64>().map_err(|err| err.to_string())?);
                     } else {
                         let mut current_num: String = String::new();
                         if adjacent.col < index {
@@ -101,10 +101,10 @@ pub fn part_2(contents: &str) -> Result<u32, String> {
                             }
                         }
 
-                        nums.push(current_num.parse::<u32>().map_err(|err| err.to_string())?);
+                        nums.push(current_num.parse::<u64>().map_err(|err| err.to_string())?);
                     }
                 }
-                result += nums.iter().product::<u32>()
+                result += nums.iter().product::<u64>()
             }
         }
     }

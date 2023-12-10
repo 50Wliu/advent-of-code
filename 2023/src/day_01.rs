@@ -1,21 +1,21 @@
-pub fn part_1(contents: &str) -> Result<u32, String> {
+pub fn part_1(contents: &str) -> Result<u64, String> {
     contents.lines().try_fold(0, |acc, line| {
         let matches = line.matches(char::is_numeric).collect::<Vec<_>>();
         let first_digit = matches
             .first()
             .ok_or("No first match".to_string())?
-            .parse::<u32>()
+            .parse::<u64>()
             .map_err(|err| err.to_string())?;
         let last_digit = matches
             .last()
             .ok_or("No last match".to_string())?
-            .parse::<u32>()
+            .parse::<u64>()
             .map_err(|err| err.to_string())?;
         Ok(acc + first_digit * 10 + last_digit)
     })
 }
 
-pub fn part_2(contents: &str) -> Result<u32, String> {
+pub fn part_2(contents: &str) -> Result<u64, String> {
     contents.lines().try_fold(0, |acc, line| {
         let matches = line_to_matches(line);
 
@@ -44,9 +44,9 @@ pub fn part_2(contents: &str) -> Result<u32, String> {
     })
 }
 
-fn match_to_int(m: &str) -> Option<u32> {
+fn match_to_int(m: &str) -> Option<u64> {
     match m.chars().next()?.to_digit(10) {
-        Some(digit) => Some(digit),
+        Some(digit) => Some(digit.into()),
         None => match m {
             "one" => Some(1),
             "two" => Some(2),

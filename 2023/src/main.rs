@@ -2,6 +2,7 @@ pub mod day_01;
 pub mod day_02;
 pub mod day_03;
 pub mod day_04;
+pub mod day_05;
 
 pub mod utilities;
 
@@ -26,6 +27,7 @@ fn main() -> Result<(), String> {
         [day_02::part_1, day_02::part_2],
         [day_03::part_1, day_03::part_2],
         [day_04::part_1, day_04::part_2],
+        [day_05::part_1, day_05::part_2],
     ];
 
     let days_to_run = match args.day {
