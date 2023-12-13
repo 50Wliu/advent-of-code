@@ -18,15 +18,17 @@ pub fn part_1(contents: &str) -> Result<u64, String> {
         .collect::<Result<Vec<_>, _>>()?;
     let races = times.into_iter().zip(distances);
 
-    Ok(races.map(|(time, distance)| {
-        (0..time).fold(0, |acc, charge_time| {
-            if (time - charge_time) * charge_time > distance {
-                acc + 1
-            } else {
-                acc
-            }
+    Ok(races
+        .map(|(time, distance)| {
+            (0..time).fold(0, |acc, charge_time| {
+                if (time - charge_time) * charge_time > distance {
+                    acc + 1
+                } else {
+                    acc
+                }
+            })
         })
-    }).product())
+        .product())
 }
 
 pub fn part_2(contents: &str) -> Result<u64, String> {
@@ -37,14 +39,16 @@ pub fn part_2(contents: &str) -> Result<u64, String> {
         .strip_prefix("Time:")
         .ok_or("Missing `Time:` prefix")?
         .replace(' ', "")
-        .parse::<u64>().map_err(|err| err.to_string())?;
+        .parse::<u64>()
+        .map_err(|err| err.to_string())?;
     let distance = lines
         .next()
         .ok_or("Missing distances")?
         .strip_prefix("Distance:")
         .ok_or("Missing `Distance:` prefix")?
         .replace(' ', "")
-        .parse::<u64>().map_err(|err| err.to_string())?;
+        .parse::<u64>()
+        .map_err(|err| err.to_string())?;
 
     Ok((0..time).fold(0, |acc, charge_time| {
         if (time - charge_time) * charge_time > distance {
