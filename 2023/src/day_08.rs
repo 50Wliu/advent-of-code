@@ -46,47 +46,9 @@ pub fn part_2(contents: &str) -> Result<u64, String> {
         .filter(|node| node.ends_with('A'))
         .collect::<Vec<_>>();
 
-    // let len = network.len();
+    let mut steps_to_z = vec![];
 
-    // let current_nodes = Arc::new(Mutex::new(current_nodes));
-
-    // // println!("{:?}", current_nodes);
-
-    // let handles = (0..len).map(|i| {
-    //     thread::spawn(move || {
-    //         let mut current_node = current_nodes.lock().unwrap()[i];
-    //         let mut steps = 0;
-    //         for direction in directions {
-    //             steps += 1;
-    //             let destinations = network
-    //                 .get(current_node)
-    //                 .unwrap();
-    //             match direction {
-    //                 'L' => {
-    //                     current_node = &destinations.0;
-    //                 }
-    //                 'R' => {
-    //                     current_node = &destinations.1;
-    //                 }
-    //                 _ => {
-    //                     panic!("Invalid direction {}", direction);
-    //                 }
-    //             }
-
-    //             // println!("{} {:?}", steps, current_nodes);
-
-    //             // if current_nodes.iter().all(|node| node.ends_with('Z')) {
-    //             //     break;
-    //             // }
-    //         }
-    //     })
-    // });
-
-    // for handle in handles {
-    //     handle.join().unwrap();
-    // }
-
-    let mut steps = 0;
+    let mut steps = 0u64;
     for direction in directions {
         steps += 1;
         current_nodes = current_nodes
@@ -101,17 +63,20 @@ pub fn part_2(contents: &str) -> Result<u64, String> {
             })
             .collect::<Result<Vec<_>, _>>()?;
 
-        // println!("{} {:?}", steps, current_nodes);
-        if steps % 10_000_000 == 0 {
-            println!("{} {:?}", steps, current_nodes);
+        let num_nodes = current_nodes.len();
+        current_nodes = current_nodes.into_iter().filter(|node| !node.ends_with('Z')).collect();
+
+        // Push `steps` for each filtered-out node that ends with Z
+        for _ in 0..num_nodes - current_nodes.len() {
+            steps_to_z.push(steps);
         }
 
-        if current_nodes.iter().all(|node| node.ends_with('Z')) {
+        if current_nodes.is_empty() {
             break;
         }
     }
 
-    Ok(steps)
+    steps_to_z.into_iter().reduce(|acc, x| num::integer::lcm(acc, x)).ok_or(String::from("no lcm?"))
 }
 
 fn build_network<'a>(
