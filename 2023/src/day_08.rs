@@ -116,8 +116,8 @@ pub fn part_2(contents: &str) -> Result<u64, String> {
 
 fn build_network<'a>(
     lines: impl Iterator<Item = &'a str>,
-) -> Result<HashMap<String, (String, String)>, String> {
-    let mut network: HashMap<String, (String, String)> = HashMap::new();
+) -> Result<HashMap<&'a str, (&'a str, &'a str)>, String> {
+    let mut network: HashMap<&str, (&str, &str)> = HashMap::new();
     for line in lines {
         let mut line = line.split('=');
         let from = line.next().ok_or("Missing from node")?.trim();
@@ -129,16 +129,16 @@ fn build_network<'a>(
             .trim_end_matches(')')
             .split(',');
         network.insert(
-            String::from(from),
+            from,
             (
-                String::from(destinations
+                destinations
                     .next()
                     .ok_or("Missing left destination")?
-                    .trim()),
-                String::from(destinations
+                    .trim(),
+                destinations
                     .next()
                     .ok_or("Missing right destination")?
-                    .trim()),
+                    .trim(),
             ),
         );
     }
