@@ -64,7 +64,7 @@ pub fn part_2(contents: &str) -> Result<u64, String> {
             .collect::<Result<Vec<_>, _>>()?;
 
         let num_nodes = current_nodes.len();
-        current_nodes = current_nodes.into_iter().filter(|node| !node.ends_with('Z')).collect();
+        current_nodes.retain(|node| !node.ends_with('Z'));
 
         // Push `steps` for each filtered-out node that ends with Z
         for _ in 0..num_nodes - current_nodes.len() {
@@ -76,7 +76,7 @@ pub fn part_2(contents: &str) -> Result<u64, String> {
         }
     }
 
-    steps_to_z.into_iter().reduce(|acc, x| num::integer::lcm(acc, x)).ok_or(String::from("no lcm?"))
+    steps_to_z.into_iter().reduce(num::integer::lcm).ok_or(String::from("no lcm?"))
 }
 
 fn build_network<'a>(
