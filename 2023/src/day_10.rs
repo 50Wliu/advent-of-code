@@ -17,7 +17,10 @@ pub fn part_1(contents: &str) -> Result<u64, String> {
 
     let grid = lines.collect::<Vec<_>>();
 
-    traverse(&grid, START, Direction::None, row, col).ok_or("No path found".to_string())
+    let steps = traverse(&grid, START, Direction::None, row, col).ok_or("No path found".to_string())?;
+
+    // Farthest distance will be at the halfway point.
+    Ok(steps / 2)
 }
 
 pub fn part_2(contents: &str) -> Result<u64, String> {
