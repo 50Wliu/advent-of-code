@@ -8,9 +8,9 @@ pub fn part_1(contents: &str) -> Result<u64, String> {
         })
         .collect::<Result<Vec<_>, _>>()?;
 
-    Ok(sequences.iter().try_fold(0, |acc, sequence| {
-        Some(acc + get_next_prediction(sequence)?)
-    }).ok_or("Boom")? as u64)
+    Ok(sequences
+        .iter()
+        .fold(0, |acc, sequence| acc + get_next_prediction(sequence)) as u64)
 }
 
 pub fn part_2(contents: &str) -> Result<u64, String> {
@@ -23,35 +23,33 @@ pub fn part_2(contents: &str) -> Result<u64, String> {
         })
         .collect::<Result<Vec<_>, _>>()?;
 
-    Ok(sequences.iter().try_fold(0, |acc, sequence| {
-        Some(acc + get_previous_prediction(sequence)?)
-    }).ok_or("Boom")? as u64)
+    Ok(sequences
+        .iter()
+        .fold(0, |acc, sequence| acc + get_previous_prediction(sequence)) as u64)
 }
 
-fn get_next_prediction(sequence: &[i64]) -> Option<i64> {
-    if sequence.is_empty() || sequence.iter().all(|item| *item == 0) {
-        return Some(0);
+fn get_next_prediction(sequence: &[i64]) -> i64 {
+    if sequence.iter().all(|item| *item == 0) {
+        return 0;
     }
 
-    let mut next_sequence = vec![];
+    let next_sequence = sequence
+        .windows(2)
+        .map(|window| window[1] - window[0])
+        .collect::<Vec<_>>();
 
-    for window in sequence.windows(2) {
-        next_sequence.push(window[1] - window[0]);
-    }
-
-    Some(get_next_prediction(&next_sequence)? + sequence.last()?)
+    get_next_prediction(&next_sequence) + sequence[sequence.len() - 1]
 }
 
-fn get_previous_prediction(sequence: &[i64]) -> Option<i64> {
-    if sequence.is_empty() || sequence.iter().all(|item| *item == 0) {
-        return Some(0);
+fn get_previous_prediction(sequence: &[i64]) -> i64 {
+    if sequence.iter().all(|item| *item == 0) {
+        return 0;
     }
 
-    let mut next_sequence = vec![];
+    let next_sequence = sequence
+        .windows(2)
+        .map(|window| window[1] - window[0])
+        .collect::<Vec<_>>();
 
-    for window in sequence.windows(2) {
-        next_sequence.push(window[1] - window[0]);
-    }
-
-    Some(sequence.first()? - get_previous_prediction(&next_sequence)?)
+    sequence[0] - get_previous_prediction(&next_sequence)
 }

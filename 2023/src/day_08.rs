@@ -76,7 +76,7 @@ pub fn part_2(contents: &str) -> Result<u64, String> {
         }
     }
 
-    steps_to_z.into_iter().reduce(num::integer::lcm).ok_or(String::from("no lcm?"))
+    steps_to_z.into_iter().reduce(num::integer::lcm).ok_or(String::from("No LCM"))
 }
 
 fn build_network<'a>(
