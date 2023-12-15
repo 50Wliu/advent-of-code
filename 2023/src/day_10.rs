@@ -29,7 +29,9 @@ pub fn part_2(contents: &str) -> Result<u64, String> {
 fn traverse(grid: &[&str], char: char, from: Direction, row: usize, col: usize) -> Option<u64> {
     // If the current pipe can connect to the north,
     // see if the pipe above can also connect to the south.
-    if from != Direction::North && (char == START || char == NORTH_SOUTH || char == NORTH_WEST || char == NORTH_EAST) {
+    if from != Direction::North
+        && (char == START || char == NORTH_SOUTH || char == NORTH_WEST || char == NORTH_EAST)
+    {
         if let Some(line) = grid.get(row - 1) {
             if let Some(char) = line.chars().nth(col) {
                 if char == START {
@@ -47,7 +49,9 @@ fn traverse(grid: &[&str], char: char, from: Direction, row: usize, col: usize) 
 
     // If the current pipe can connect to the south,
     // see if the pipe below can also connect to the north.
-    if from != Direction::South && (char == START || char == NORTH_SOUTH || char == SOUTH_WEST || char == SOUTH_EAST) {
+    if from != Direction::South
+        && (char == START || char == NORTH_SOUTH || char == SOUTH_WEST || char == SOUTH_EAST)
+    {
         if let Some(line) = grid.get(row + 1) {
             if let Some(char) = line.chars().nth(col) {
                 if char == START {
@@ -65,7 +69,9 @@ fn traverse(grid: &[&str], char: char, from: Direction, row: usize, col: usize) 
 
     // If the current pipe can connect to the west,
     // see if the pipe to the left can also connect to the east.
-    if from != Direction::West && (char == START || char == EAST_WEST || char == NORTH_WEST || char == SOUTH_WEST) {
+    if from != Direction::West
+        && (char == START || char == EAST_WEST || char == NORTH_WEST || char == SOUTH_WEST)
+    {
         if let Some(char) = grid[row].chars().nth(col - 1) {
             if char == START {
                 return Some(0);
@@ -81,7 +87,9 @@ fn traverse(grid: &[&str], char: char, from: Direction, row: usize, col: usize) 
 
     // If the current pipe can connect to the east,
     // see if the pipe to the right can also connect to the west.
-    if from != Direction::East && (char == START || char == EAST_WEST || char == NORTH_EAST || char == SOUTH_EAST) {
+    if from != Direction::East
+        && (char == START || char == EAST_WEST || char == NORTH_EAST || char == SOUTH_EAST)
+    {
         if let Some(char) = grid[row].chars().nth(col + 1) {
             if char == START {
                 return Some(0);
