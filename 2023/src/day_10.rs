@@ -72,28 +72,28 @@ fn start_traverse_loop(grid: &mut [Vec<Tile>], point: Point) {
 
     let pipe = grid.to_owned()[row - 1][col].pipe;
     if (pipe == NORTH_SOUTH || pipe == SOUTH_WEST || pipe == SOUTH_EAST)
-        && traverse_loop(grid, pipe, Direction::South, Point { row: row - 1, col }).is_some()
+        && traverse_loop(grid, pipe, Direction::South, Point { row: row - 1, col })
     {
         return;
     }
 
     let pipe = grid.to_owned()[row + 1][col].pipe;
     if (pipe == NORTH_SOUTH || pipe == NORTH_WEST || pipe == NORTH_EAST)
-        && traverse_loop(grid, pipe, Direction::North, Point { row: row + 1, col }).is_some()
+        && traverse_loop(grid, pipe, Direction::North, Point { row: row + 1, col })
     {
         return;
     }
 
     let pipe = grid.to_owned()[row][col - 1].pipe;
     if (pipe == EAST_WEST || pipe == NORTH_EAST || pipe == SOUTH_EAST)
-        && traverse_loop(grid, pipe, Direction::East, Point { row, col: col - 1 }).is_some()
+        && traverse_loop(grid, pipe, Direction::East, Point { row, col: col - 1 })
     {
         return;
     }
 
     let pipe = grid.to_owned()[row][col + 1].pipe;
     if (pipe == EAST_WEST || pipe == NORTH_WEST || pipe == SOUTH_WEST)
-        && traverse_loop(grid, pipe, Direction::West, Point { row, col: col + 1 }).is_some()
+        && traverse_loop(grid, pipe, Direction::West, Point { row, col: col + 1 })
     {
         return;
     }
@@ -106,7 +106,7 @@ fn traverse_loop(
     mut current_pipe: char,
     mut from: Direction,
     point: Point,
-) -> Option<()> {
+) -> bool {
     let Point { mut row, mut col } = point;
 
     loop {
@@ -116,7 +116,7 @@ fn traverse_loop(
         };
 
         if current_pipe == START {
-            return Some(());
+            return true;
         }
 
         if from != Direction::North
@@ -136,7 +136,7 @@ fn traverse_loop(
                 current_pipe = new_pipe;
                 row -= 1;
             } else {
-                return None;
+                return false;
             }
         } else if from != Direction::South
             && (current_pipe == NORTH_SOUTH
@@ -155,7 +155,7 @@ fn traverse_loop(
                 current_pipe = new_pipe;
                 row += 1;
             } else {
-                return None;
+                return false;
             }
         } else if from != Direction::West
             && (current_pipe == EAST_WEST
@@ -174,7 +174,7 @@ fn traverse_loop(
                 current_pipe = new_pipe;
                 col -= 1;
             } else {
-                return None;
+                return false;
             }
         } else if from != Direction::East
             && (current_pipe == EAST_WEST
@@ -193,7 +193,7 @@ fn traverse_loop(
                 current_pipe = new_pipe;
                 col += 1;
             } else {
-                return None;
+                return false;
             }
         } else {
             panic!(
