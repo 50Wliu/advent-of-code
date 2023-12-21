@@ -28,10 +28,10 @@ pub fn part_1(contents: &str) -> Result<u64, String> {
         })
         .collect::<Vec<_>>();
 
-    start_traverse_loop(&mut grid, Point { row, col });
-    let steps = get_count(&grid);
+    update_grid_with_loop(&mut grid, Point { row, col });
 
     // Farthest distance will be at the halfway point.
+    let steps = get_count(&grid);
     Ok(steps / 2)
 }
 
@@ -55,7 +55,7 @@ pub fn part_2(contents: &str) -> Result<u64, String> {
         })
         .collect::<Vec<_>>();
 
-    start_traverse_loop(&mut grid, Point { row, col });
+    update_grid_with_loop(&mut grid, Point { row, col });
 
     let mut enclosed_tiles = 0;
     for row in 0..grid.len() {
@@ -67,7 +67,7 @@ pub fn part_2(contents: &str) -> Result<u64, String> {
     Ok(enclosed_tiles)
 }
 
-fn start_traverse_loop(grid: &mut [Vec<Tile>], point: Point) {
+fn update_grid_with_loop(grid: &mut [Vec<Tile>], point: Point) {
     let Point { row, col } = point;
 
     let pipe = grid.to_owned()[row - 1][col].pipe;
