@@ -19,7 +19,7 @@ pub fn part_1(contents: &str) -> Result<u64, String> {
 
     let grid = lines.collect::<Vec<_>>();
 
-    let grid_copy = start_traverse_loop(&grid, Point { row, col }).ok_or("I don't care")?;
+    let grid_copy = start_traverse_loop(&grid, Point { row, col }).ok_or("TODO")?;
     let steps = get_count(&grid_copy);
 
     // Farthest distance will be at the halfway point.
@@ -37,14 +37,14 @@ pub fn part_2(contents: &str) -> Result<u64, String> {
 
     let grid = lines.collect::<Vec<_>>();
 
-    let mut grid_copy = start_traverse_loop(&grid, Point { row, col })?;
+    let mut grid_copy = start_traverse_loop(&grid, Point { row, col }).ok_or("TODO")?;
 
     fill_in_grid(&grid, &mut grid_copy);
 
     let mut enclosed_tiles = 0;
     for row in 0..grid_copy.len() {
         for col in 0..grid_copy[row].len() {
-            enclosed_tiles += classify_point(grid_copy, Point { row, col });
+            enclosed_tiles += classify_point(&mut grid_copy, &Point { row, col });
         }
     }
 
@@ -248,7 +248,7 @@ fn classify_point(
     // from: Direction, // TODO: Change this to heading so I don't need to keep flipping the directions in my head.
     point: &Point, // min_loop_point: &Point,
                    // max_loop_point: &Point,
-) -> u32 {
+) -> u64 {
     let Point { mut row, mut col } = *point;
     // let Point {
     //     row: min_loop_row,
@@ -294,15 +294,10 @@ fn classify_point(
         } = grid[row][col - 1]?;
         match classification {
             PipeClassification::Unknown => {
-                points_to_search.push((row, col - 1));
+                points_to_search.push_back(Point {row, col: col - 1});
             }
             PipeClassification::Loop => {
-                // TODO: Check squeezability.
-                if let Some(point) =
-                    squeeze_through_pipe(&grid, Direction::East, &Point { row, col: col - 1 })
-                {
-                    // TODO: Push into points_to_search.
-                }
+                points_to_search.append(&mut VecDeque::from(squeeze_through_pipe(&grid, Direction::East, &Point { row, col: col - 1 })));
             }
             classification => {
                 grid[row][col]?.classification = classification;
@@ -310,7 +305,11 @@ fn classify_point(
                     grid[r][c]?.classification = classification;
                 }
 
-                return classification == PipeClassification::Inside;
+                if classification == PipeClassification::Inside {
+                    return already_searched.len() as u64;
+                } else {
+                    return 0;
+                }
             }
         }
 
@@ -728,7 +727,7 @@ fn squeeze_through_pipe(
                 }
             }
         } else {
-            return Some(Point { row, col });
+            return vec![Point { row, col }];
         }
     }
 }
