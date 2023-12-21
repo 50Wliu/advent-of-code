@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashSet, VecDeque};
 
 const START: char = 'S';
 const NORTH_SOUTH: char = '|';
@@ -19,7 +19,8 @@ pub fn part_1(contents: &str) -> Result<u64, String> {
 
     let grid = lines.collect::<Vec<_>>();
 
-    let steps = start_traverse_loop(&grid, Point { row, col }).len() as u64;
+    let grid_copy = start_traverse_loop(&grid, Point { row, col }).ok_or("I don't care")?;
+    let steps = get_count(&grid_copy);
 
     // Farthest distance will be at the halfway point.
     Ok(steps / 2)
@@ -36,79 +37,30 @@ pub fn part_2(contents: &str) -> Result<u64, String> {
 
     let grid = lines.collect::<Vec<_>>();
 
-    let r#loop = start_traverse_loop(&grid, Point { row, col });
+    let mut grid_copy = start_traverse_loop(&grid, Point { row, col })?;
 
-    let min_loop_row = r#loop
-        .keys()
-        .min_by_key(|(row, _)| row)
-        .ok_or("Empty loop")?
-        .0;
-    let min_loop_col = r#loop
-        .keys()
-        .min_by_key(|(_, col)| col)
-        .ok_or("Empty loop")?
-        .1;
-    let max_loop_row = r#loop
-        .keys()
-        .max_by_key(|(row, _)| row)
-        .ok_or("Empty loop")?
-        .0;
-    let max_loop_col = r#loop
-        .keys()
-        .max_by_key(|(_, col)| col)
-        .ok_or("Empty loop")?
-        .1;
+    fill_in_grid(&grid, &mut grid_copy);
 
     let mut enclosed_tiles = 0;
-    enclosed_tiles = start_traverse_outside(
-        &grid,
-        &r#loop,
-        Point {
-            row: min_loop_row,
-            col: min_loop_col,
-        },
-        Point {
-            row: max_loop_row,
-            col: max_loop_col,
-        },
-    );
-    // for (row, line) in grid.iter().enumerate() {
-    //     for (col, _) in line.chars().enumerate() {
-    //         // On the loop itself.
-    //         if r#loop.get(&(row, col)).is_some() {
-    //             continue;
-    //         }
-
-    //         if !start_traverse_outside(
-    //             &r#loop,
-    //             Point { row, col },
-    //             Point {
-    //                 row: min_loop_row,
-    //                 col: min_loop_col,
-    //             },
-    //             Point {
-    //                 row: max_loop_row,
-    //                 col: max_loop_col,
-    //             },
-    //         ) {
-    //             enclosed_tiles += 1;
-    //         }
-    //     }
-    // }
+    for row in 0..grid_copy.len() {
+        for col in 0..grid_copy[row].len() {
+            enclosed_tiles += classify_point(grid_copy, Point { row, col });
+        }
+    }
 
     Ok(enclosed_tiles)
 }
 
-fn start_traverse_loop(grid: &[&str], point: Point) -> HashMap<(usize, usize), char> {
+fn start_traverse_loop(grid: &[&str], point: Point) -> Option<Vec<Vec<Option<Tile>>>> {
     let Point { row, col } = point;
 
     if let Some(line) = grid.get(row - 1) {
         if let Some(char) = line.chars().nth(col) {
             if char == NORTH_SOUTH || char == SOUTH_WEST || char == SOUTH_EAST {
-                if let Some(r#loop) =
+                if let Some(grid_copy) =
                     traverse_loop(grid, char, Direction::South, Point { row: row - 1, col })
                 {
-                    return r#loop;
+                    return Some(grid_copy);
                 }
             }
         }
@@ -117,10 +69,10 @@ fn start_traverse_loop(grid: &[&str], point: Point) -> HashMap<(usize, usize), c
     if let Some(line) = grid.get(row + 1) {
         if let Some(char) = line.chars().nth(col) {
             if char == NORTH_SOUTH || char == NORTH_WEST || char == NORTH_EAST {
-                if let Some(r#loop) =
+                if let Some(grid_copy) =
                     traverse_loop(grid, char, Direction::North, Point { row: row + 1, col })
                 {
-                    return r#loop;
+                    return Some(grid_copy);
                 }
             }
         }
@@ -128,20 +80,20 @@ fn start_traverse_loop(grid: &[&str], point: Point) -> HashMap<(usize, usize), c
 
     if let Some(char) = grid[row].chars().nth(col - 1) {
         if char == EAST_WEST || char == NORTH_EAST || char == SOUTH_EAST {
-            if let Some(r#loop) =
+            if let Some(grid_copy) =
                 traverse_loop(grid, char, Direction::East, Point { row, col: col - 1 })
             {
-                return r#loop;
+                return Some(grid_copy);
             }
         }
     }
 
     if let Some(char) = grid[row].chars().nth(col + 1) {
         if char == EAST_WEST || char == NORTH_WEST || char == SOUTH_WEST {
-            if let Some(r#loop) =
+            if let Some(grid_copy) =
                 traverse_loop(grid, char, Direction::West, Point { row, col: col + 1 })
             {
-                return r#loop;
+                return Some(grid_copy);
             }
         }
     }
@@ -154,14 +106,22 @@ fn traverse_loop(
     mut current_pipe: char,
     mut from: Direction,
     point: Point,
-) -> Option<HashMap<(usize, usize), char>> {
+) -> Option<Vec<Vec<Option<Tile>>>> {
     let Point { mut row, mut col } = point;
-    let mut r#loop = HashMap::new();
+
+    // TODO: figure out a less ugly way to initialize an array of arrays with values
+    let mut grid_copy = vec![vec![None; grid[0].len()]; grid.len()];
+    let mut pipe_length = 0;
+
     loop {
-        r#loop.insert((row, col), current_pipe);
+        pipe_length += 1;
+        grid_copy[row][col] = Some(Tile {
+            pipe: current_pipe,
+            classification: PipeClassification::Loop,
+        });
 
         if current_pipe == START {
-            return Some(r#loop);
+            return Some(grid_copy);
         }
 
         if from != Direction::North
@@ -257,299 +217,519 @@ fn traverse_loop(
     }
 }
 
-fn start_traverse_outside(
-    grid: &[&str],
-    r#loop: &HashMap<(usize, usize), char>,
-    min_loop_point: Point,
-    max_loop_point: Point,
-) -> u64 {
-    // let Point { row, col } = point;
-    // Start at (0, 0). This is guaranteed to either be outside the loop or on the loop itself.
-    let row = 0;
-    let col = 0;
-    let Point {
-        row: min_loop_row,
-        col: min_loop_col,
-    } = min_loop_point;
-    let Point {
-        row: max_loop_row,
-        col: max_loop_col,
-    } = max_loop_point;
+// TODO: expand this to take some matcher
+fn get_count(grid: &Vec<Vec<Option<Tile>>>) -> u64 {
+    let mut count = 0;
+    for row in grid {
+        for col in row {
+            if col.is_some() {
+                count += 1;
+            }
+        }
+    }
+    count
+}
 
-    // Already outside.
-    // (Perform this check here to prevent underflows.)
-    if row <= min_loop_row || row >= max_loop_row || col <= min_loop_col || col >= max_loop_col {
+fn fill_in_grid(grid: &Vec<&str>, grid_copy: &mut Vec<Vec<Option<Tile>>>) {
+    for row in 0..grid.len() {
+        for col in 0..grid[row].len() {
+            if grid_copy[row][col].is_none() {
+                grid_copy[row][col] = Some(Tile {
+                    pipe: grid[row].chars().nth(col).unwrap(),
+                    classification: PipeClassification::Unknown,
+                });
+            }
+        }
+    }
+}
+
+fn classify_point(
+    grid: &mut Vec<Vec<Option<Tile>>>,
+    // from: Direction, // TODO: Change this to heading so I don't need to keep flipping the directions in my head.
+    point: &Point, // min_loop_point: &Point,
+                   // max_loop_point: &Point,
+) -> u32 {
+    let Point { mut row, mut col } = *point;
+    // let Point {
+    //     row: min_loop_row,
+    //     col: min_loop_col,
+    // } = *min_loop_point;
+    // let Point {
+    //     row: max_loop_row,
+    //     col: max_loop_col,
+    // } = *max_loop_point;
+
+    // if row <= min_loop_row || row >= max_loop_row || col <= min_loop_col || col >= max_loop_col {
+    //     return true;
+    // }
+
+    let pipe = grid[row][col]?;
+    if pipe.classification != PipeClassification::Unknown {
         return 0;
     }
 
-    let _ = traverse_outside(
-        r#loop,
-        Direction::South,
-        &Point { row: row - 1, col },
-        &min_loop_point,
-        &max_loop_point,
-    ) || traverse_outside(
-        r#loop,
-        Direction::North,
-        &Point { row: row + 1, col },
-        &min_loop_point,
-        &max_loop_point,
-    ) || traverse_outside(
-        r#loop,
-        Direction::East,
-        &Point { row, col: col - 1 },
-        &min_loop_point,
-        &max_loop_point,
-    ) || traverse_outside(
-        r#loop,
-        Direction::West,
-        &Point { row, col: col + 1 },
-        &min_loop_point,
-        &max_loop_point,
-    );
-
-    0
-}
-
-fn traverse_outside(
-    r#loop: &HashMap<(usize, usize), char>,
-    from: Direction, // TODO: Change this to heading so I don't need to keep flipping the directions in my head.
-    point: &Point,
-    min_loop_point: &Point,
-    max_loop_point: &Point,
-) -> bool {
-    let Point { mut row, mut col } = *point;
-    let Point {
-        row: min_loop_row,
-        col: min_loop_col,
-    } = *min_loop_point;
-    let Point {
-        row: max_loop_row,
-        col: max_loop_col,
-    } = *max_loop_point;
-
-    if row <= min_loop_row || row >= max_loop_row || col <= min_loop_col || col >= max_loop_col {
-        return true;
-    }
-
     let mut already_searched = HashSet::new();
-    let mut directions = vec![from];
-    let mut adjacent = None;
+    let mut points_to_search = VecDeque::new();
+
+    // Fill points_to_search with all adjacent points.
+    // Continuously dequeue from PTS.
+    // If the point we dequeue is unknown, we push 7 more points.
+    // !A POINT WE KNOW ABOUT!
+
+    // let mut directions = vec![from];
+    // let mut adjacent = None;
 
     loop {
         // Jinkies! We've made it back to the beginning without finding any way out.
-        if directions.is_empty() {
-            return false;
+        // if directions.is_empty() {
+        //     return false;
+        // }
+
+        already_searched.insert((row, col));
+
+        // TODO: Copy this 8 times.
+        let Tile {
+            pipe,
+            classification,
+        } = grid[row][col - 1]?;
+        match classification {
+            PipeClassification::Unknown => {
+                points_to_search.push((row, col - 1));
+            }
+            PipeClassification::Loop => {
+                // TODO: Check squeezability.
+                if let Some(point) =
+                    squeeze_through_pipe(&grid, Direction::East, &Point { row, col: col - 1 })
+                {
+                    // TODO: Push into points_to_search.
+                }
+            }
+            classification => {
+                grid[row][col]?.classification = classification;
+                for (r, c) in already_searched {
+                    grid[r][c]?.classification = classification;
+                }
+
+                return classification == PipeClassification::Inside;
+            }
         }
 
-        match directions[directions.len() - 1] {
-            Direction::North => {
-                // Are we on a loop segment?
-                // TODO: Make sure this lines up with the logic described in the non-loop-segment section.
-                if let Some(pipe) = r#loop.get(&(row, col)) {
-                    match *pipe {
-                        NORTH_SOUTH => {
-                            // If so, check the adjacent pairs for squeezability.
-                            // TODO: Is this already_searched logic correct?
-                            // TODO: Once we start squeezing down a pipe, we must stay on the same pair.
-                            if adjacent.unwrap_or(&Adjacent::Minus) == &Adjacent::Minus {
-                                if let Some(minus_adjacent) = r#loop.get(&(row, col - 1)) {
-                                    match *minus_adjacent {
-                                        NORTH_SOUTH
-                                            if !already_searched.contains(&(row + 1, col)) =>
-                                        {
-                                            directions.push(Direction::North);
-                                            adjacent = Some(&Adjacent::Minus);
-                                            row += 1;
+        // TODO: If points_to_search is empty, we are Inside.
 
-                                            continue;
-                                        }
-                                        NORTH_WEST
-                                            if !already_searched.contains(&(row, col - 1)) =>
-                                        {
-                                            directions.push(Direction::East);
-                                            adjacent = Some(&Adjacent::Minus);
-                                            col -= 1;
+        // ====== OLD ========
 
-                                            continue;
-                                        }
-                                        NORTH_EAST
-                                            if !already_searched.contains(&(row, col + 1)) =>
-                                        {
-                                            directions.push(Direction::West);
-                                            adjacent = Some(&Adjacent::Minus);
-                                            col += 1;
+        // match directions[directions.len() - 1] {
+        //     Direction::North => {
+        //         // Are we on a loop segment?
+        //         // TODO: Make sure this lines up with the logic described in the non-loop-segment section.
+        //         // . |
+        //         if let Some(pipe) = r#loop.get(&(row, col)) {
+        //             match *pipe {
+        //                 NORTH_SOUTH => {
+        //                     // If so, check the adjacent pairs for squeezability.
+        //                     // TODO: Is this already_searched logic correct?
+        //                     // TODO: Once we start squeezing down a pipe, we must stay on the same pair.
+        //                     if adjacent.unwrap_or(&Adjacent::Minus) == &Adjacent::Minus {
+        //                         if let Some(minus_adjacent) = r#loop.get(&(row, col - 1)) {
+        //                             match *minus_adjacent {
+        //                                 NORTH_SOUTH
+        //                                     if !already_searched.contains(&(row + 1, col)) =>
+        //                                 {
+        //                                     directions.push(Direction::North);
+        //                                     adjacent = Some(&Adjacent::Minus);
+        //                                     row += 1;
 
-                                            continue;
-                                        }
-                                        _ => {
-                                            // Fall through.
-                                        }
-                                    }
-                                }
-                            }
+        //                                     continue;
+        //                                 }
+        //                                 NORTH_WEST
+        //                                     if !already_searched.contains(&(row, col - 1)) =>
+        //                                 {
+        //                                     directions.push(Direction::East);
+        //                                     adjacent = Some(&Adjacent::Minus);
+        //                                     col -= 1;
 
-                            // If the first adjacent failed, check the second.
-                            if adjacent.unwrap_or(&Adjacent::Plus) == &Adjacent::Plus {
-                                if let Some(plus_adjacent) = r#loop.get(&(row, col + 1)) {
-                                    match *plus_adjacent {
-                                        NORTH_SOUTH
-                                            if !already_searched.contains(&(row + 1, col)) =>
-                                        {
-                                            directions.push(Direction::North);
-                                            adjacent = Some(&Adjacent::Plus);
-                                            row += 1;
+        //                                     continue;
+        //                                 }
+        //                                 NORTH_EAST
+        //                                     if !already_searched.contains(&(row, col + 1)) =>
+        //                                 {
+        //                                     directions.push(Direction::West);
+        //                                     adjacent = Some(&Adjacent::Minus);
+        //                                     col += 1;
 
-                                            continue;
-                                        }
-                                        NORTH_WEST
-                                            if !already_searched.contains(&(row, col - 1)) =>
-                                        {
-                                            directions.push(Direction::East);
-                                            adjacent = Some(&Adjacent::Plus);
-                                            col -= 1;
+        //                                     continue;
+        //                                 }
+        //                                 _ => {
+        //                                     // Fall through.
+        //                                 }
+        //                             }
+        //                         }
+        //                     }
 
-                                            continue;
-                                        }
-                                        NORTH_EAST
-                                            if !already_searched.contains(&(row, col + 1)) =>
-                                        {
-                                            directions.push(Direction::West);
-                                            adjacent = Some(&Adjacent::Plus);
-                                            col += 1;
+        //                     // If the first adjacent failed, check the second.
+        //                     if adjacent.unwrap_or(&Adjacent::Plus) == &Adjacent::Plus {
+        //                         if let Some(plus_adjacent) = r#loop.get(&(row, col + 1)) {
+        //                             match *plus_adjacent {
+        //                                 NORTH_SOUTH
+        //                                     if !already_searched.contains(&(row + 1, col)) =>
+        //                                 {
+        //                                     directions.push(Direction::North);
+        //                                     adjacent = Some(&Adjacent::Plus);
+        //                                     row += 1;
 
-                                            continue;
-                                        }
-                                        _ => {
-                                            // Fall through.
-                                        }
-                                    }
-                                }
-                            }
+        //                                     continue;
+        //                                 }
+        //                                 NORTH_WEST
+        //                                     if !already_searched.contains(&(row, col - 1)) =>
+        //                                 {
+        //                                     directions.push(Direction::East);
+        //                                     adjacent = Some(&Adjacent::Plus);
+        //                                     col -= 1;
 
-                            // TODO: Double-check this. What if we find ground?
-                            // If both failed, we're at a dead end. Backtrack.
-                            already_searched.insert((row, col));
-                            directions.pop();
-                            row -= 1;
-                        }
-                        _ => {
-                            // TODO: Fill in the rest of the cases.
-                        }
-                    }
-                } else {
-                    // TODO: This doesn't check if we're going to end up on a loop segment.
-                    // If we are, we need to ensure that
-                    // 1) the segment is oriented correctly, and
-                    // 2) there is a neighboring segment that allows us to squeeze. (Pairs?!?! Ugh)
-                    //    - THERE MAY BE TWO!!!
-                    if !already_searched.contains(&(row + 1, col)) {
-                        directions.push(Direction::North);
-                        row += 1;
-                    } else if !already_searched.contains(&(row, col - 1)) {
-                        directions.push(Direction::East);
-                        col -= 1;
-                    } else if !already_searched.contains(&(row, col + 1)) {
-                        directions.push(Direction::West);
-                        col += 1;
-                    } else {
-                        // Dead end. Backtrack.
-                        already_searched.insert((row, col));
-                        directions.pop();
-                        row -= 1;
-                    }
-                }
+        //                                     continue;
+        //                                 }
+        //                                 NORTH_EAST
+        //                                     if !already_searched.contains(&(row, col + 1)) =>
+        //                                 {
+        //                                     directions.push(Direction::West);
+        //                                     adjacent = Some(&Adjacent::Plus);
+        //                                     col += 1;
+
+        //                                     continue;
+        //                                 }
+        //                                 _ => {
+        //                                     // Fall through.
+        //                                 }
+        //                             }
+        //                         }
+        //                     }
+
+        //                     // TODO: Double-check this. What if we find ground?
+        //                     // If both failed, we're at a dead end. Backtrack.
+        //                     already_searched.insert((row, col));
+        //                     directions.pop();
+        //                     row -= 1;
+        //                 }
+        //                 _ => {
+        //                     // TODO: Fill in the rest of the cases.
+        //                 }
+        //             }
+        //         } else {
+        //             // TODO: This doesn't check if we're going to end up on a loop segment.
+        //             // If we are, we need to ensure that
+        //             // 1) the segment is oriented correctly, and
+        //             // 2) there is a neighboring segment that allows us to squeeze. (Pairs?!?! Ugh)
+        //             //    - THERE MAY BE TWO!!!
+        //             if !already_searched.contains(&(row + 1, col)) {
+        //                 directions.push(Direction::North);
+        //                 row += 1;
+        //             } else if !already_searched.contains(&(row, col - 1)) {
+        //                 directions.push(Direction::East);
+        //                 col -= 1;
+        //             } else if !already_searched.contains(&(row, col + 1)) {
+        //                 directions.push(Direction::West);
+        //                 col += 1;
+        //             } else {
+        //                 // Dead end. Backtrack.
+        //                 already_searched.insert((row, col));
+        //                 directions.pop();
+        //                 row -= 1;
+        //             }
+        //         }
+        //     }
+        //     Direction::South => {
+        //         // Are we on a loop segment?
+        //         if let Some(pipe) = r#loop.get(&(row, col)) {
+        //             match *pipe {
+        //                 NORTH_SOUTH => {
+        //                     already_searched.insert((row, col));
+        //                     directions.push(Direction::South);
+
+        //                     row -= 1;
+        //                 }
+        //                 SOUTH_WEST => {
+        //                     already_searched.insert((row, col));
+        //                     directions.push(Direction::East);
+
+        //                     col -= 1;
+        //                 }
+        //                 SOUTH_EAST => {
+        //                     already_searched.insert((row, col));
+        //                     directions.push(Direction::West);
+
+        //                     col += 1;
+        //                 }
+        //                 _ => {
+        //                     // Dead end. Backtrack.
+        //                     directions.pop();
+        //                     row += 1;
+        //                 }
+        //             }
+        //         }
+        //     }
+        //     Direction::East => {
+        //         // Are we on a loop segment?
+        //         if let Some(pipe) = r#loop.get(&(row, col)) {
+        //             match *pipe {
+        //                 EAST_WEST => {
+        //                     already_searched.insert((row, col));
+        //                     directions.push(Direction::East);
+
+        //                     col -= 1;
+        //                 }
+        //                 NORTH_EAST => {
+        //                     already_searched.insert((row, col));
+        //                     directions.push(Direction::South);
+
+        //                     row -= 1;
+        //                 }
+        //                 SOUTH_EAST => {
+        //                     already_searched.insert((row, col));
+        //                     directions.push(Direction::North);
+
+        //                     row += 1;
+        //                 }
+        //                 _ => {
+        //                     // Dead end. Backtrack.
+        //                     directions.pop();
+        //                     col += 1;
+        //                 }
+        //             }
+        //         }
+        //     }
+        //     Direction::West => {
+        //         // Are we on a loop segment?
+        //         if let Some(pipe) = r#loop.get(&(row, col)) {
+        //             match *pipe {
+        //                 EAST_WEST => {
+        //                     already_searched.insert((row, col));
+        //                     directions.push(Direction::West);
+
+        //                     col += 1;
+        //                 }
+        //                 NORTH_WEST => {
+        //                     already_searched.insert((row, col));
+        //                     directions.push(Direction::South);
+
+        //                     row -= 1;
+        //                 }
+        //                 SOUTH_WEST => {
+        //                     already_searched.insert((row, col));
+        //                     directions.push(Direction::North);
+
+        //                     row += 1;
+        //                 }
+        //                 _ => {
+        //                     // Dead end. Backtrack.
+        //                     directions.pop();
+        //                     col -= 1;
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
+    }
+}
+
+fn squeeze_through_pipe(
+    grid: &Vec<Vec<Option<Tile>>>,
+    mut from: Direction,
+    point: &Point,
+    // adjacent: &Adjacent,
+) -> Vec<Point> {
+    let Point { mut row, mut col } = *point;
+
+    // TODO: Keeping track of adjacency not needed,
+    // we can always use + 1.
+    let (adjacent_row, adjacent_col) = match from {
+        Direction::North | Direction::South => (
+            row,
+            if adjacent == &Adjacent::Minus {
+                col - 1
+            } else {
+                col + 1
+            },
+        ),
+        Direction::East | Direction::West => (
+            if adjacent == &Adjacent::Minus {
+                row - 1
+            } else {
+                row + 1
+            },
+            col,
+        ),
+    };
+    let adjacent_pipe = grid[adjacent_row][adjacent_col]?.pipe;
+
+    // OOOOOOOOOOOOOOOOOOOO
+    // OF----7F7F7F7F-7OOOO
+    // O|F--7||||||||FJOOOO
+    // O||OFJ||||||||L7OOOO
+    // FJL7L7LJLJ||LJIL-7OO
+    // L--JOL7IIILJS7F-7L7O
+    // OOOOF-JIIF7FJ|L7L7L7
+    // OOOOL7IF7||L7|IL7L7|
+    // OOOOO|FJLJ|FJ|F7|OLJ
+    // OOOOFJL-7O||O||||OOO
+    // OOOOL---JOLJOLJLJOOO
+
+    //|   F----7
+    //|   |   O|
+    //|   L---7|
+    //|       ||  F-7
+    //S  .    |L--JO|
+    //|       |F----J
+    //|       ||
+    //L-------|L
+    //O       JO
+
+    //
+    //---------J0
+    //----------7
+
+    //|   F----7
+    //|   |   O|
+    //|   L---7|
+    //|       ||  F-7
+    //S  .    |L--JO|
+    //|       |F----J
+    //||      ||
+    //|L------|L
+    //O       JO
+
+    // The "7L from the north" case.
+    //|   F----7
+    //|   |   O|
+    //|   L---7|
+    //|   F---J|  F-7
+    //S   L---7L--JO|
+    //|       |F----J
+    //|       ||
+    //L-------JL
+    //        OO
+
+    // 4-way intersection!
+    //|   F----7
+    //|   |   O|
+    //|   L---7|  F-7
+    //|   F---JL--JO|
+    //S   L---7F----J
+    //|       ||
+    //|       ||
+    //L-------JL
+    //        OO
+
+    // What is the base case exit condition?
+    // - When the adjacent is not part of the loop, or
+    // - When the tile is not part of the loop, or
+    // - Anything else...?
+
+    loop {
+        if let Some(tile) = grid[row][col] {
+            if tile.classification != PipeClassification::Loop {
+                return vec![Point { row, col }];
             }
-            Direction::South => {
-                // Are we on a loop segment?
-                if let Some(pipe) = r#loop.get(&(row, col)) {
-                    match *pipe {
-                        NORTH_SOUTH => {
-                            already_searched.insert((row, col));
-                            directions.push(Direction::South);
 
-                            row -= 1;
-                        }
+            match from {
+                // We are pretty sure we can ignore going up (Direction::South),
+                // as we should have already come _down_ from the other direction
+                // if iterating top-to-bottom.
+                Direction::North => {
+                    match tile.pipe {
+                        // TODO: All of these currently assume Adjacent::Plus.
+                        // TODO: Hmm, there's a ton of duplication here...
                         SOUTH_WEST => {
-                            already_searched.insert((row, col));
-                            directions.push(Direction::East);
+                            match adjacent_pipe {
+                                NORTH_SOUTH | SOUTH_EAST => {
+                                    row += 1;
+                                }
+                                NORTH_EAST => {
+                                    // TODO: This one can go both south or east.
+                                    let mut points = squeeze_through_pipe(
+                                        grid,
+                                        Direction::North,
+                                        &Point { row: row + 1, col },
+                                        &Adjacent::Plus,
+                                    );
+                                    points.append(&mut squeeze_through_pipe(
+                                        grid,
+                                        Direction::West,
+                                        &Point { row, col: col + 1 },
+                                        &Adjacent::Plus,
+                                    ));
 
-                            col -= 1;
-                        }
-                        SOUTH_EAST => {
-                            already_searched.insert((row, col));
-                            directions.push(Direction::West);
-
-                            col += 1;
-                        }
-                        _ => {
-                            // Dead end. Backtrack.
-                            directions.pop();
-                            row += 1;
-                        }
-                    }
-                }
-            }
-            Direction::East => {
-                // Are we on a loop segment?
-                if let Some(pipe) = r#loop.get(&(row, col)) {
-                    match *pipe {
-                        EAST_WEST => {
-                            already_searched.insert((row, col));
-                            directions.push(Direction::East);
-
-                            col -= 1;
-                        }
-                        NORTH_EAST => {
-                            already_searched.insert((row, col));
-                            directions.push(Direction::South);
-
-                            row -= 1;
-                        }
-                        SOUTH_EAST => {
-                            already_searched.insert((row, col));
-                            directions.push(Direction::North);
-
-                            row += 1;
-                        }
-                        _ => {
-                            // Dead end. Backtrack.
-                            directions.pop();
-                            col += 1;
-                        }
-                    }
-                }
-            }
-            Direction::West => {
-                // Are we on a loop segment?
-                if let Some(pipe) = r#loop.get(&(row, col)) {
-                    match *pipe {
-                        EAST_WEST => {
-                            already_searched.insert((row, col));
-                            directions.push(Direction::West);
-
-                            col += 1;
+                                    return points;
+                                }
+                                _ => {
+                                    return vec![];
+                                }
+                            }
                         }
                         NORTH_WEST => {
-                            already_searched.insert((row, col));
-                            directions.push(Direction::South);
+                            match adjacent_pipe {
+                                NORTH_SOUTH | SOUTH_EAST => {
+                                    row += 1;
+                                }
+                                NORTH_EAST => {
+                                    // TODO: This one can go south, east, AND west (Adjacent::Minus)!
+                                    let mut points = squeeze_through_pipe(
+                                        grid,
+                                        Direction::North,
+                                        &Point { row: row + 1, col },
+                                        &Adjacent::Plus,
+                                    );
+                                    points.append(&mut squeeze_through_pipe(
+                                        grid,
+                                        Direction::West,
+                                        &Point { row, col: col + 1 },
+                                        &Adjacent::Plus,
+                                    ));
+                                    points.append(&mut squeeze_through_pipe(
+                                        grid,
+                                        Direction::East,
+                                        &Point { row: row + 1, col },
+                                        &Adjacent::Plus,
+                                    ));
 
-                            row -= 1;
+                                    return points;
+                                }
+                                _ => {
+                                    return vec![];
+                                }
+                            }
                         }
-                        SOUTH_WEST => {
-                            already_searched.insert((row, col));
-                            directions.push(Direction::North);
+                        NORTH_SOUTH => {
+                            match adjacent_pipe {
+                                NORTH_SOUTH | SOUTH_EAST => {
+                                    row += 1;
+                                }
+                                NORTH_EAST => {
+                                    // TODO: This one can go both south or east.
+                                    let mut points = squeeze_through_pipe(
+                                        grid,
+                                        Direction::North,
+                                        &Point { row: row + 1, col },
+                                        &Adjacent::Plus,
+                                    );
+                                    points.append(&mut squeeze_through_pipe(
+                                        grid,
+                                        Direction::West,
+                                        &Point { row, col: col + 1 },
+                                        &Adjacent::Plus,
+                                    ));
 
-                            row += 1;
-                        }
-                        _ => {
-                            // Dead end. Backtrack.
-                            directions.pop();
-                            col -= 1;
+                                    return points;
+                                }
+                                _ => {
+                                    return vec![];
+                                }
+                            }
                         }
                     }
                 }
             }
+        } else {
+            return Some(Point { row, col });
         }
     }
 }
@@ -573,10 +753,16 @@ enum Adjacent {
     Plus,
 }
 
-// Loop can change to Outside but not to Inside.
-#[derive(PartialEq)]
+#[derive(Clone, PartialEq)]
 enum PipeClassification {
+    Unknown,
     Inside,
     Outside,
-    Loop
+    Loop,
+}
+
+#[derive(Clone)]
+struct Tile {
+    pipe: char,
+    classification: PipeClassification,
 }
