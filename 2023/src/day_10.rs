@@ -535,12 +535,9 @@ fn squeeze_through_pipe(
     grid: &Vec<Vec<Option<Tile>>>,
     mut from: Direction,
     point: &Point,
-    // adjacent: &Adjacent,
+    adjacent: &Adjacent,
 ) -> Vec<Point> {
     let Point { mut row, mut col } = *point;
-
-    // TODO: Keeping track of adjacency not needed,
-    // we can always use + 1.
     let (adjacent_row, adjacent_col) = match from {
         Direction::North | Direction::South => (
             row,
@@ -580,22 +577,24 @@ fn squeeze_through_pipe(
     //S  .    |L--JO|
     //|       |F----J
     //|       ||
-    //L-------|L
-    //O       JO
+    //L-------JL
+    //        OO
+
+    // Counterpoint to hardcoding + 1.
+    // (Unless we also check for squeezes in the diagonal directions??)
+    //|      F----7
+    //|      |O   |
+    //|      |F---J
+    //|      ||  F-7
+    //S      |L--JO|
+    //|      |F----J
+    //|      ||
+    //L------JL
+    //       OO
 
     //
     //---------J0
     //----------7
-
-    //|   F----7
-    //|   |   O|
-    //|   L---7|
-    //|       ||  F-7
-    //S  .    |L--JO|
-    //|       |F----J
-    //||      ||
-    //|L------|L
-    //O       JO
 
     // The "7L from the north" case.
     //|   F----7
