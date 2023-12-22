@@ -31,7 +31,7 @@ pub fn part_1(contents: &str) -> Result<u64, String> {
     update_grid_with_loop(&mut grid, Point { row, col });
 
     // Farthest distance will be at the halfway point.
-    let steps = get_count(&grid);
+    let steps = get_count(&grid, PipeClassification::Loop);
     Ok(steps / 2)
 }
 
@@ -60,10 +60,27 @@ pub fn part_2(contents: &str) -> Result<u64, String> {
     let mut enclosed_tiles = 0;
     for row in 0..grid.len() {
         for col in 0..grid[row].len() {
-            enclosed_tiles += classify_point(&mut grid, &Point { row, col });
+            enclosed_tiles += classify_point(&mut grid, Point { row, col });
         }
     }
 
+    for line in &grid {
+        for tile in line {
+            print!(
+                "{}",
+                match tile.classification {
+                    PipeClassification::Unknown => '?',
+                    PipeClassification::Inside => 'I',
+                    PipeClassification::Outside => 'O',
+                    PipeClassification::Loop => tile.pipe,
+                }
+            );
+        }
+        println!();
+    }
+
+    // TODO: Why is this not the same as enclosed_tiles?
+    // Ok(get_count(&grid, PipeClassification::Inside))
     Ok(enclosed_tiles)
 }
 
@@ -205,11 +222,11 @@ fn traverse_loop(
 }
 
 // TODO: expand this to take some matcher
-fn get_count(grid: &Vec<Vec<Tile>>) -> u64 {
+fn get_count(grid: &[Vec<Tile>], classification: PipeClassification) -> u64 {
     let mut count = 0;
     for row in grid {
         for col in row {
-            if col.classification == PipeClassification::Loop {
+            if col.classification == classification {
                 count += 1;
             }
         }
@@ -217,324 +234,107 @@ fn get_count(grid: &Vec<Vec<Tile>>) -> u64 {
     count
 }
 
-fn classify_point(
-    grid: &mut [Vec<Tile>],
-    // from: Direction, // TODO: Change this to heading so I don't need to keep flipping the directions in my head.
-    point: &Point, // min_loop_point: &Point,
-                   // max_loop_point: &Point,
-) -> u64 {
-    let Point { row, col } = *point;
-    // let Point {
-    //     row: min_loop_row,
-    //     col: min_loop_col,
-    // } = *min_loop_point;
-    // let Point {
-    //     row: max_loop_row,
-    //     col: max_loop_col,
-    // } = *max_loop_point;
-
-    // if row <= min_loop_row || row >= max_loop_row || col <= min_loop_col || col >= max_loop_col {
-    //     return true;
-    // }
-
+fn classify_point(grid: &mut [Vec<Tile>], point: Point) -> u64 {
+    let Point { row, col } = point;
     let pipe = grid[row][col];
     if pipe.classification != PipeClassification::Unknown {
         return 0;
     }
 
     let mut already_searched = HashSet::new();
-    let mut points_to_search = VecDeque::new();
+    let mut points_to_search = VecDeque::from([point]);
 
-    // Fill points_to_search with all adjacent points.
-    // Continuously dequeue from PTS.
-    // If the point we dequeue is unknown, we push 7 more points.
-    // !A POINT WE KNOW ABOUT!
+    while let Some(Point { row, col }) = points_to_search.pop_front() {
+        // If we already added this point, don't search it again...
+        if !already_searched.insert((row, col)) {
+            continue;
+        }
 
-    // let mut directions = vec![from];
-    // let mut adjacent = None;
-
-    loop {
-        // Jinkies! We've made it back to the beginning without finding any way out.
-        // if directions.is_empty() {
-        //     return false;
-        // }
-
-        already_searched.insert((row, col));
-
-        // TODO: Copy this 8 times.
-        let Tile {
-            pipe: _,
-            classification,
-        } = grid[row][col - 1];
-        match classification {
-            PipeClassification::Unknown => {
-                points_to_search.push_back(Point { row, col: col - 1 });
-            }
-            PipeClassification::Loop => {
-                points_to_search.append(&mut VecDeque::from(squeeze_through_pipe(
-                    grid,
-                    Direction::East,
-                    &Point { row, col: col - 1 },
-                    &Adjacent::Plus,
-                )));
-            }
-            classification => {
-                grid[row][col].classification = classification;
+        if row == 0 || col == 0 || row == grid.len() - 1 || col == grid[row].len() - 1 {
+            let classification = grid[row][col].classification;
+            if classification == PipeClassification::Loop {
+                // Can't squeeze past the edge of the grid.
+                continue;
+            } else if classification == PipeClassification::Unknown {
                 for (r, c) in &already_searched {
-                    grid[*r][*c].classification = classification;
+                    grid[*r][*c].classification = PipeClassification::Outside;
                 }
-
-                if classification == PipeClassification::Inside {
-                    return already_searched.len() as u64;
-                } else {
-                    return 0;
-                }
+                return 0;
             }
         }
 
-        // TODO: If points_to_search is empty, we are Inside.
+        for row_modifier in [-1, 0, 1] {
+            for col_modifier in [-1, 0, 1] {
+                let point = Point {
+                    row: row
+                        .checked_add_signed(row_modifier)
+                        .expect("Row underflowed even though we checked for row == 0?"),
+                    col: col
+                        .checked_add_signed(col_modifier)
+                        .expect("Col underflowed even though we checked for col == 0?"),
+                };
+                let Tile {
+                    pipe: _,
+                    classification,
+                } = grid[point.row][point.col];
+                match classification {
+                    PipeClassification::Unknown => {
+                        points_to_search.push_back(point);
+                    }
+                    PipeClassification::Loop => {
+                        points_to_search.append(&mut VecDeque::from(squeeze_through_pipe(
+                            grid,
+                            Direction::North,
+                            &point,
+                        )));
+                        points_to_search.append(&mut VecDeque::from(squeeze_through_pipe(
+                            grid,
+                            Direction::West,
+                            &point,
+                        )));
+                        points_to_search.append(&mut VecDeque::from(squeeze_through_pipe(
+                            grid,
+                            Direction::East,
+                            &point,
+                        )));
+                        points_to_search.append(&mut VecDeque::from(squeeze_through_pipe(
+                            grid,
+                            Direction::South,
+                            &point,
+                        )));
+                    }
+                    classification => {
+                        let mut newly_inside_count = 0;
+                        for (r, c) in &already_searched {
+                            if grid[*r][*c].classification == PipeClassification::Unknown {
+                                newly_inside_count += 1;
+                                grid[*r][*c].classification = classification;
+                            }
+                        }
 
-        // ====== OLD ========
-
-        // match directions[directions.len() - 1] {
-        //     Direction::North => {
-        //         // Are we on a loop segment?
-        //         // TODO: Make sure this lines up with the logic described in the non-loop-segment section.
-        //         // . |
-        //         if let Some(pipe) = r#loop.get(&(row, col)) {
-        //             match *pipe {
-        //                 NORTH_SOUTH => {
-        //                     // If so, check the adjacent pairs for squeezability.
-        //                     // TODO: Is this already_searched logic correct?
-        //                     // TODO: Once we start squeezing down a pipe, we must stay on the same pair.
-        //                     if adjacent.unwrap_or(&Adjacent::Minus) == &Adjacent::Minus {
-        //                         if let Some(minus_adjacent) = r#loop.get(&(row, col - 1)) {
-        //                             match *minus_adjacent {
-        //                                 NORTH_SOUTH
-        //                                     if !already_searched.contains(&(row + 1, col)) =>
-        //                                 {
-        //                                     directions.push(Direction::North);
-        //                                     adjacent = Some(&Adjacent::Minus);
-        //                                     row += 1;
-
-        //                                     continue;
-        //                                 }
-        //                                 NORTH_WEST
-        //                                     if !already_searched.contains(&(row, col - 1)) =>
-        //                                 {
-        //                                     directions.push(Direction::East);
-        //                                     adjacent = Some(&Adjacent::Minus);
-        //                                     col -= 1;
-
-        //                                     continue;
-        //                                 }
-        //                                 NORTH_EAST
-        //                                     if !already_searched.contains(&(row, col + 1)) =>
-        //                                 {
-        //                                     directions.push(Direction::West);
-        //                                     adjacent = Some(&Adjacent::Minus);
-        //                                     col += 1;
-
-        //                                     continue;
-        //                                 }
-        //                                 _ => {
-        //                                     // Fall through.
-        //                                 }
-        //                             }
-        //                         }
-        //                     }
-
-        //                     // If the first adjacent failed, check the second.
-        //                     if adjacent.unwrap_or(&Adjacent::Plus) == &Adjacent::Plus {
-        //                         if let Some(plus_adjacent) = r#loop.get(&(row, col + 1)) {
-        //                             match *plus_adjacent {
-        //                                 NORTH_SOUTH
-        //                                     if !already_searched.contains(&(row + 1, col)) =>
-        //                                 {
-        //                                     directions.push(Direction::North);
-        //                                     adjacent = Some(&Adjacent::Plus);
-        //                                     row += 1;
-
-        //                                     continue;
-        //                                 }
-        //                                 NORTH_WEST
-        //                                     if !already_searched.contains(&(row, col - 1)) =>
-        //                                 {
-        //                                     directions.push(Direction::East);
-        //                                     adjacent = Some(&Adjacent::Plus);
-        //                                     col -= 1;
-
-        //                                     continue;
-        //                                 }
-        //                                 NORTH_EAST
-        //                                     if !already_searched.contains(&(row, col + 1)) =>
-        //                                 {
-        //                                     directions.push(Direction::West);
-        //                                     adjacent = Some(&Adjacent::Plus);
-        //                                     col += 1;
-
-        //                                     continue;
-        //                                 }
-        //                                 _ => {
-        //                                     // Fall through.
-        //                                 }
-        //                             }
-        //                         }
-        //                     }
-
-        //                     // TODO: Double-check this. What if we find ground?
-        //                     // If both failed, we're at a dead end. Backtrack.
-        //                     already_searched.insert((row, col));
-        //                     directions.pop();
-        //                     row -= 1;
-        //                 }
-        //                 _ => {
-        //                     // TODO: Fill in the rest of the cases.
-        //                 }
-        //             }
-        //         } else {
-        //             // TODO: This doesn't check if we're going to end up on a loop segment.
-        //             // If we are, we need to ensure that
-        //             // 1) the segment is oriented correctly, and
-        //             // 2) there is a neighboring segment that allows us to squeeze. (Pairs?!?! Ugh)
-        //             //    - THERE MAY BE TWO!!!
-        //             if !already_searched.contains(&(row + 1, col)) {
-        //                 directions.push(Direction::North);
-        //                 row += 1;
-        //             } else if !already_searched.contains(&(row, col - 1)) {
-        //                 directions.push(Direction::East);
-        //                 col -= 1;
-        //             } else if !already_searched.contains(&(row, col + 1)) {
-        //                 directions.push(Direction::West);
-        //                 col += 1;
-        //             } else {
-        //                 // Dead end. Backtrack.
-        //                 already_searched.insert((row, col));
-        //                 directions.pop();
-        //                 row -= 1;
-        //             }
-        //         }
-        //     }
-        //     Direction::South => {
-        //         // Are we on a loop segment?
-        //         if let Some(pipe) = r#loop.get(&(row, col)) {
-        //             match *pipe {
-        //                 NORTH_SOUTH => {
-        //                     already_searched.insert((row, col));
-        //                     directions.push(Direction::South);
-
-        //                     row -= 1;
-        //                 }
-        //                 SOUTH_WEST => {
-        //                     already_searched.insert((row, col));
-        //                     directions.push(Direction::East);
-
-        //                     col -= 1;
-        //                 }
-        //                 SOUTH_EAST => {
-        //                     already_searched.insert((row, col));
-        //                     directions.push(Direction::West);
-
-        //                     col += 1;
-        //                 }
-        //                 _ => {
-        //                     // Dead end. Backtrack.
-        //                     directions.pop();
-        //                     row += 1;
-        //                 }
-        //             }
-        //         }
-        //     }
-        //     Direction::East => {
-        //         // Are we on a loop segment?
-        //         if let Some(pipe) = r#loop.get(&(row, col)) {
-        //             match *pipe {
-        //                 EAST_WEST => {
-        //                     already_searched.insert((row, col));
-        //                     directions.push(Direction::East);
-
-        //                     col -= 1;
-        //                 }
-        //                 NORTH_EAST => {
-        //                     already_searched.insert((row, col));
-        //                     directions.push(Direction::South);
-
-        //                     row -= 1;
-        //                 }
-        //                 SOUTH_EAST => {
-        //                     already_searched.insert((row, col));
-        //                     directions.push(Direction::North);
-
-        //                     row += 1;
-        //                 }
-        //                 _ => {
-        //                     // Dead end. Backtrack.
-        //                     directions.pop();
-        //                     col += 1;
-        //                 }
-        //             }
-        //         }
-        //     }
-        //     Direction::West => {
-        //         // Are we on a loop segment?
-        //         if let Some(pipe) = r#loop.get(&(row, col)) {
-        //             match *pipe {
-        //                 EAST_WEST => {
-        //                     already_searched.insert((row, col));
-        //                     directions.push(Direction::West);
-
-        //                     col += 1;
-        //                 }
-        //                 NORTH_WEST => {
-        //                     already_searched.insert((row, col));
-        //                     directions.push(Direction::South);
-
-        //                     row -= 1;
-        //                 }
-        //                 SOUTH_WEST => {
-        //                     already_searched.insert((row, col));
-        //                     directions.push(Direction::North);
-
-        //                     row += 1;
-        //                 }
-        //                 _ => {
-        //                     // Dead end. Backtrack.
-        //                     directions.pop();
-        //                     col -= 1;
-        //                 }
-        //             }
-        //         }
-        //     }
-        // }
+                        if classification == PipeClassification::Inside {
+                            return newly_inside_count;
+                        } else {
+                            return 0;
+                        }
+                    }
+                }
+            }
+        }
     }
+
+    let mut newly_inside_count = 0;
+    for (r, c) in &already_searched {
+        if grid[*r][*c].classification == PipeClassification::Unknown {
+            newly_inside_count += 1;
+            grid[*r][*c].classification = PipeClassification::Inside;
+        }
+    }
+    newly_inside_count
 }
 
-fn squeeze_through_pipe(
-    grid: &[Vec<Tile>],
-    from: Direction,
-    point: &Point,
-    adjacent: &Adjacent,
-) -> Vec<Point> {
+fn squeeze_through_pipe(grid: &[Vec<Tile>], from: Direction, point: &Point) -> Vec<Point> {
     let Point { mut row, mut col } = *point;
-    let (adjacent_row, adjacent_col) = match from {
-        Direction::North | Direction::South => (
-            row,
-            if adjacent == &Adjacent::Minus {
-                col - 1
-            } else {
-                col + 1
-            },
-        ),
-        Direction::East | Direction::West => (
-            if adjacent == &Adjacent::Minus {
-                row - 1
-            } else {
-                row + 1
-            },
-            col,
-        ),
-    };
-    let adjacent_pipe = grid[adjacent_row][adjacent_col].pipe;
 
     // OOOOOOOOOOOOOOOOOOOO
     // OF----7F7F7F7F-7OOOO
@@ -596,11 +396,6 @@ fn squeeze_through_pipe(
     //L-------JL
     //        OO
 
-    // What is the base case exit condition?
-    // - When the adjacent is not part of the loop, or
-    // - When the tile is not part of the loop, or
-    // - Anything else...?
-
     loop {
         let tile = grid[row][col];
         if tile.classification != PipeClassification::Loop {
@@ -608,31 +403,35 @@ fn squeeze_through_pipe(
         }
 
         match from {
-            // We are pretty sure we can ignore going up (Direction::South),
-            // as we should have already come _down_ from the other direction
-            // if iterating top-to-bottom.
             Direction::North => {
+                let Tile {
+                    pipe: adjacent_pipe,
+                    classification: adjacent_classification,
+                } = grid[row][col + 1];
+                if adjacent_classification != PipeClassification::Loop {
+                    return vec![Point { row, col }];
+                }
+
                 match tile.pipe {
-                    // TODO: All of these currently assume Adjacent::Plus.
-                    // TODO: Hmm, there's a ton of duplication here...
-                    SOUTH_WEST => {
+                    SOUTH_WEST | NORTH_SOUTH => {
                         match adjacent_pipe {
+                            // 7|, 7F, ||, |F
+                            // ??, ??, ??, ??
                             NORTH_SOUTH | SOUTH_EAST => {
                                 row += 1;
                             }
+                            // 7L, |L
+                            // ??, ??
                             NORTH_EAST => {
-                                // TODO: This one can go both south or east.
                                 let mut points = squeeze_through_pipe(
                                     grid,
                                     Direction::North,
                                     &Point { row: row + 1, col },
-                                    &Adjacent::Plus,
                                 );
                                 points.append(&mut squeeze_through_pipe(
                                     grid,
                                     Direction::West,
                                     &Point { row, col: col + 1 },
-                                    &Adjacent::Plus,
                                 ));
 
                                 return points;
@@ -644,28 +443,39 @@ fn squeeze_through_pipe(
                     }
                     NORTH_WEST => {
                         match adjacent_pipe {
+                            // J|, JF
+                            // ??, ??
                             NORTH_SOUTH | SOUTH_EAST => {
-                                row += 1;
-                            }
-                            NORTH_EAST => {
-                                // TODO: This one can go south, east, AND west (Adjacent::Minus)!
                                 let mut points = squeeze_through_pipe(
                                     grid,
                                     Direction::North,
                                     &Point { row: row + 1, col },
-                                    &Adjacent::Plus,
+                                );
+                                points.append(&mut squeeze_through_pipe(
+                                    grid,
+                                    Direction::East,
+                                    &Point { row, col },
+                                ));
+
+                                return points;
+                            }
+                            // JL
+                            // ??
+                            NORTH_EAST => {
+                                let mut points = squeeze_through_pipe(
+                                    grid,
+                                    Direction::North,
+                                    &Point { row: row + 1, col },
                                 );
                                 points.append(&mut squeeze_through_pipe(
                                     grid,
                                     Direction::West,
                                     &Point { row, col: col + 1 },
-                                    &Adjacent::Plus,
                                 ));
                                 points.append(&mut squeeze_through_pipe(
                                     grid,
                                     Direction::East,
-                                    &Point { row: row + 1, col },
-                                    &Adjacent::Plus,
+                                    &Point { row, col },
                                 ));
 
                                 return points;
@@ -675,24 +485,40 @@ fn squeeze_through_pipe(
                             }
                         }
                     }
-                    NORTH_SOUTH => {
+                    _ => {
+                        return vec![];
+                    }
+                }
+            }
+            Direction::West => {
+                let Tile {
+                    pipe: adjacent_pipe,
+                    classification: adjacent_classification,
+                } = grid[row + 1][col];
+                if adjacent_classification != PipeClassification::Loop {
+                    return vec![Point { row, col }];
+                }
+
+                match tile.pipe {
+                    EAST_WEST | NORTH_EAST => {
                         match adjacent_pipe {
-                            NORTH_SOUTH | SOUTH_EAST => {
-                                row += 1;
+                            // -?, -?, L?, L?
+                            // -?, F?, -?, F?
+                            EAST_WEST | SOUTH_EAST => {
+                                col += 1;
                             }
-                            NORTH_EAST => {
-                                // TODO: This one can go both south or east.
+                            // -?, L?
+                            // 7?, 7?
+                            SOUTH_WEST => {
                                 let mut points = squeeze_through_pipe(
                                     grid,
                                     Direction::North,
                                     &Point { row: row + 1, col },
-                                    &Adjacent::Plus,
                                 );
                                 points.append(&mut squeeze_through_pipe(
                                     grid,
                                     Direction::West,
                                     &Point { row, col: col + 1 },
-                                    &Adjacent::Plus,
                                 ));
 
                                 return points;
@@ -702,10 +528,241 @@ fn squeeze_through_pipe(
                             }
                         }
                     }
-                    _ => todo!(),
+                    NORTH_WEST => {
+                        match adjacent_pipe {
+                            // J?, J?
+                            // -?, F?
+                            EAST_WEST | SOUTH_EAST => {
+                                let mut points = squeeze_through_pipe(
+                                    grid,
+                                    Direction::West,
+                                    &Point { row, col: col + 1 },
+                                );
+                                points.append(&mut squeeze_through_pipe(
+                                    grid,
+                                    Direction::South,
+                                    &Point { row, col },
+                                ));
+
+                                return points;
+                            }
+                            // J?
+                            // 7?
+                            SOUTH_WEST => {
+                                let mut points = squeeze_through_pipe(
+                                    grid,
+                                    Direction::North,
+                                    &Point { row: row + 1, col },
+                                );
+                                points.append(&mut squeeze_through_pipe(
+                                    grid,
+                                    Direction::West,
+                                    &Point { row, col: col + 1 },
+                                ));
+                                points.append(&mut squeeze_through_pipe(
+                                    grid,
+                                    Direction::South,
+                                    &Point { row, col },
+                                ));
+
+                                return points;
+                            }
+                            _ => {
+                                return vec![];
+                            }
+                        }
+                    }
+                    _ => {
+                        return vec![];
+                    }
                 }
             }
-            _ => todo!(),
+            Direction::East => {
+                let Tile {
+                    pipe: adjacent_pipe,
+                    classification: adjacent_classification,
+                } = grid[row + 1][col];
+                if adjacent_classification != PipeClassification::Loop {
+                    return vec![Point { row, col }];
+                }
+
+                match tile.pipe {
+                    NORTH_WEST | EAST_WEST => {
+                        match adjacent_pipe {
+                            // ?J, ?J, ?-, ?-
+                            // ?-, ?7, ?-, ?7
+                            EAST_WEST | SOUTH_WEST => {
+                                col -= 1;
+                            }
+                            // ?J, ?-
+                            // ?F, ?F
+                            SOUTH_EAST => {
+                                let mut points = squeeze_through_pipe(
+                                    grid,
+                                    Direction::North,
+                                    &Point {
+                                        row: row + 1,
+                                        col: col - 1,
+                                    },
+                                );
+                                points.append(&mut squeeze_through_pipe(
+                                    grid,
+                                    Direction::East,
+                                    &Point { row, col: col - 1 },
+                                ));
+
+                                return points;
+                            }
+                            _ => {
+                                return vec![];
+                            }
+                        }
+                    }
+                    NORTH_EAST => {
+                        match adjacent_pipe {
+                            // ?L, ?L
+                            // ?-, ?7
+                            EAST_WEST | SOUTH_WEST => {
+                                let mut points = squeeze_through_pipe(
+                                    grid,
+                                    Direction::East,
+                                    &Point { row, col: col - 1 },
+                                );
+                                points.append(&mut squeeze_through_pipe(
+                                    grid,
+                                    Direction::South,
+                                    &Point { row, col: col - 1 },
+                                ));
+
+                                return points;
+                            }
+                            // ?L
+                            // ?F
+                            SOUTH_EAST => {
+                                let mut points = squeeze_through_pipe(
+                                    grid,
+                                    Direction::North,
+                                    &Point {
+                                        row: row + 1,
+                                        col: col - 1,
+                                    },
+                                );
+                                points.append(&mut squeeze_through_pipe(
+                                    grid,
+                                    Direction::East,
+                                    &Point { row, col: col - 1 },
+                                ));
+                                points.append(&mut squeeze_through_pipe(
+                                    grid,
+                                    Direction::South,
+                                    &Point { row, col: col - 1 },
+                                ));
+
+                                return points;
+                            }
+                            _ => {
+                                return vec![];
+                            }
+                        }
+                    }
+                    _ => {
+                        return vec![];
+                    }
+                }
+            }
+            Direction::South => {
+                let Tile {
+                    pipe: adjacent_pipe,
+                    classification: adjacent_classification,
+                } = grid[row][col + 1];
+                if adjacent_classification != PipeClassification::Loop {
+                    return vec![Point { row, col }];
+                }
+
+                match tile.pipe {
+                    NORTH_WEST | NORTH_SOUTH => {
+                        match adjacent_pipe {
+                            // ??, ??, ??, ??
+                            // J|, JL, ||, |L
+                            NORTH_SOUTH | NORTH_EAST => {
+                                row -= 1;
+                            }
+                            // ??, ??
+                            // JF, |F
+                            SOUTH_EAST => {
+                                let mut points = squeeze_through_pipe(
+                                    grid,
+                                    Direction::South,
+                                    &Point { row: row - 1, col },
+                                );
+                                points.append(&mut squeeze_through_pipe(
+                                    grid,
+                                    Direction::West,
+                                    &Point {
+                                        row: row - 1,
+                                        col: col + 1,
+                                    },
+                                ));
+
+                                return points;
+                            }
+                            _ => {
+                                return vec![];
+                            }
+                        }
+                    }
+                    SOUTH_WEST => {
+                        match adjacent_pipe {
+                            // ??, ??, ??, ??
+                            // 7|, 7L, 7|, 7L
+                            NORTH_SOUTH | NORTH_EAST => {
+                                let mut points = squeeze_through_pipe(
+                                    grid,
+                                    Direction::South,
+                                    &Point { row: row - 1, col },
+                                );
+                                points.append(&mut squeeze_through_pipe(
+                                    grid,
+                                    Direction::East,
+                                    &Point { row: row - 1, col },
+                                ));
+
+                                return points;
+                            }
+                            // ??
+                            // 7F
+                            SOUTH_EAST => {
+                                let mut points = squeeze_through_pipe(
+                                    grid,
+                                    Direction::South,
+                                    &Point { row: row - 1, col },
+                                );
+                                points.append(&mut squeeze_through_pipe(
+                                    grid,
+                                    Direction::West,
+                                    &Point {
+                                        row: row - 1,
+                                        col: col + 1,
+                                    },
+                                ));
+                                points.append(&mut squeeze_through_pipe(
+                                    grid,
+                                    Direction::East,
+                                    &Point { row: row - 1, col },
+                                ));
+
+                                return points;
+                            }
+                            _ => {
+                                return vec![];
+                            }
+                        }
+                    }
+                    _ => {
+                        return vec![];
+                    }
+                }
+            }
         }
     }
 }
@@ -721,12 +778,6 @@ enum Direction {
     South,
     East,
     West,
-}
-
-#[derive(PartialEq)]
-enum Adjacent {
-    Minus,
-    Plus,
 }
 
 #[derive(Clone, Copy, PartialEq)]
