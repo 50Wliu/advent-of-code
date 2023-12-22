@@ -282,26 +282,37 @@ fn classify_point(grid: &mut [Vec<Tile>], point: Point) -> u64 {
                         points_to_search.push_back(point);
                     }
                     PipeClassification::Loop => {
-                        points_to_search.append(&mut VecDeque::from(squeeze_through_pipe(
-                            grid,
-                            Direction::North,
-                            &point,
-                        )));
-                        points_to_search.append(&mut VecDeque::from(squeeze_through_pipe(
-                            grid,
-                            Direction::West,
-                            &point,
-                        )));
-                        points_to_search.append(&mut VecDeque::from(squeeze_through_pipe(
-                            grid,
-                            Direction::East,
-                            &point,
-                        )));
-                        points_to_search.append(&mut VecDeque::from(squeeze_through_pipe(
-                            grid,
-                            Direction::South,
-                            &point,
-                        )));
+                        if row_modifier == 1 && col_modifier != 1 {
+                            points_to_search.append(&mut VecDeque::from(squeeze_through_pipe(
+                                grid,
+                                Direction::North,
+                                &point,
+                            )));
+                        }
+
+                        if row_modifier != 1 && col_modifier == 1 {
+                            points_to_search.append(&mut VecDeque::from(squeeze_through_pipe(
+                                grid,
+                                Direction::West,
+                                &point,
+                            )));
+                        }
+
+                        if row_modifier != 1 && col_modifier == -1 {
+                            points_to_search.append(&mut VecDeque::from(squeeze_through_pipe(
+                                grid,
+                                Direction::East,
+                                &point,
+                            )));
+                        }
+
+                        if row_modifier == -1 && col_modifier != 1 {
+                            points_to_search.append(&mut VecDeque::from(squeeze_through_pipe(
+                                grid,
+                                Direction::South,
+                                &point,
+                            )));
+                        }
                     }
                     classification => {
                         let mut newly_inside_count = 0;
@@ -392,6 +403,17 @@ fn squeeze_through_pipe(grid: &[Vec<Tile>], from: Direction, point: &Point) -> V
     //|   F---JL--JO|
     //S   L---7F----J
     //|       ||
+    //|       ||
+    //L-------JL
+    //        OO
+
+    // Why we need to search upwards.
+    //|   F----7
+    //|   |   O|    F---7
+    //|   L---7|    |F-7|
+    //|   F---J|  F-J|
+    //S   L---7L--JOFJ
+    //|       |F----J
     //|       ||
     //L-------JL
     //        OO
