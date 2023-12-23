@@ -87,32 +87,40 @@ pub fn part_2(contents: &str) -> Result<u64, String> {
 fn update_grid_with_loop(grid: &mut [Vec<Tile>], point: Point) {
     let Point { row, col } = point;
 
-    let pipe = grid.to_owned()[row - 1][col].pipe;
-    if (pipe == NORTH_SOUTH || pipe == SOUTH_WEST || pipe == SOUTH_EAST)
-        && traverse_loop(grid, pipe, Direction::South, Point { row: row - 1, col })
-    {
-        return;
+    if row > 0 {
+        let pipe = grid.to_owned()[row - 1][col].pipe;
+        if (pipe == NORTH_SOUTH || pipe == SOUTH_WEST || pipe == SOUTH_EAST)
+            && traverse_loop(grid, pipe, Direction::South, Point { row: row - 1, col })
+        {
+            return;
+        }
     }
 
-    let pipe = grid.to_owned()[row + 1][col].pipe;
-    if (pipe == NORTH_SOUTH || pipe == NORTH_WEST || pipe == NORTH_EAST)
-        && traverse_loop(grid, pipe, Direction::North, Point { row: row + 1, col })
-    {
-        return;
+    if row < grid.len() - 1 {
+        let pipe = grid.to_owned()[row + 1][col].pipe;
+        if (pipe == NORTH_SOUTH || pipe == NORTH_WEST || pipe == NORTH_EAST)
+            && traverse_loop(grid, pipe, Direction::North, Point { row: row + 1, col })
+        {
+            return;
+        }
     }
 
-    let pipe = grid.to_owned()[row][col - 1].pipe;
-    if (pipe == EAST_WEST || pipe == NORTH_EAST || pipe == SOUTH_EAST)
-        && traverse_loop(grid, pipe, Direction::East, Point { row, col: col - 1 })
-    {
-        return;
+    if col > 0 {
+        let pipe = grid.to_owned()[row][col - 1].pipe;
+        if (pipe == EAST_WEST || pipe == NORTH_EAST || pipe == SOUTH_EAST)
+            && traverse_loop(grid, pipe, Direction::East, Point { row, col: col - 1 })
+        {
+            return;
+        }
     }
 
-    let pipe = grid.to_owned()[row][col + 1].pipe;
-    if (pipe == EAST_WEST || pipe == NORTH_WEST || pipe == SOUTH_WEST)
-        && traverse_loop(grid, pipe, Direction::West, Point { row, col: col + 1 })
-    {
-        return;
+    if col < grid[row].len() - 1 {
+        let pipe = grid.to_owned()[row][col + 1].pipe;
+        if (pipe == EAST_WEST || pipe == NORTH_WEST || pipe == SOUTH_WEST)
+            && traverse_loop(grid, pipe, Direction::West, Point { row, col: col + 1 })
+        {
+            return;
+        }
     }
 
     panic!("No path found");
@@ -426,6 +434,10 @@ fn squeeze_through_pipe(grid: &[Vec<Tile>], from: Direction, point: &Point) -> V
 
         match from {
             Direction::North => {
+                if col == grid[row].len() - 1 {
+                    return vec![];
+                }
+
                 let Tile {
                     pipe: adjacent_pipe,
                     classification: adjacent_classification,
@@ -440,16 +452,25 @@ fn squeeze_through_pipe(grid: &[Vec<Tile>], from: Direction, point: &Point) -> V
                             // 7|, 7F, ||, |F
                             // ??, ??, ??, ??
                             NORTH_SOUTH | SOUTH_EAST => {
+                                if row == grid.len() - 1 {
+                                    return vec![];
+                                }
+
                                 row += 1;
                             }
                             // 7L, |L
                             // ??, ??
                             NORTH_EAST => {
-                                let mut points = squeeze_through_pipe(
-                                    grid,
-                                    Direction::North,
-                                    &Point { row: row + 1, col },
-                                );
+                                let mut points = vec![];
+
+                                if row < grid.len() - 1 {
+                                    points.append(&mut squeeze_through_pipe(
+                                        grid,
+                                        Direction::North,
+                                        &Point { row: row + 1, col },
+                                    ));
+                                }
+
                                 points.append(&mut squeeze_through_pipe(
                                     grid,
                                     Direction::West,
@@ -468,11 +489,16 @@ fn squeeze_through_pipe(grid: &[Vec<Tile>], from: Direction, point: &Point) -> V
                             // J|, JF
                             // ??, ??
                             NORTH_SOUTH | SOUTH_EAST => {
-                                let mut points = squeeze_through_pipe(
-                                    grid,
-                                    Direction::North,
-                                    &Point { row: row + 1, col },
-                                );
+                                let mut points = vec![];
+
+                                if row < grid.len() - 1 {
+                                    points.append(&mut squeeze_through_pipe(
+                                        grid,
+                                        Direction::North,
+                                        &Point { row: row + 1, col },
+                                    ));
+                                }
+
                                 points.append(&mut squeeze_through_pipe(
                                     grid,
                                     Direction::East,
@@ -484,16 +510,22 @@ fn squeeze_through_pipe(grid: &[Vec<Tile>], from: Direction, point: &Point) -> V
                             // JL
                             // ??
                             NORTH_EAST => {
-                                let mut points = squeeze_through_pipe(
-                                    grid,
-                                    Direction::North,
-                                    &Point { row: row + 1, col },
-                                );
+                                let mut points = vec![];
+
+                                if row < grid.len() - 1 {
+                                    points.append(&mut squeeze_through_pipe(
+                                        grid,
+                                        Direction::North,
+                                        &Point { row: row + 1, col },
+                                    ));
+                                }
+
                                 points.append(&mut squeeze_through_pipe(
                                     grid,
                                     Direction::West,
                                     &Point { row, col: col + 1 },
                                 ));
+
                                 points.append(&mut squeeze_through_pipe(
                                     grid,
                                     Direction::East,
@@ -513,6 +545,10 @@ fn squeeze_through_pipe(grid: &[Vec<Tile>], from: Direction, point: &Point) -> V
                 }
             }
             Direction::West => {
+                if row == grid.len() - 1 {
+                    return vec![];
+                }
+
                 let Tile {
                     pipe: adjacent_pipe,
                     classification: adjacent_classification,
@@ -527,21 +563,30 @@ fn squeeze_through_pipe(grid: &[Vec<Tile>], from: Direction, point: &Point) -> V
                             // -?, -?, L?, L?
                             // -?, F?, -?, F?
                             EAST_WEST | SOUTH_EAST => {
+                                if col == grid[row].len() - 1 {
+                                    return vec![];
+                                }
+
                                 col += 1;
                             }
                             // -?, L?
                             // 7?, 7?
                             SOUTH_WEST => {
-                                let mut points = squeeze_through_pipe(
+                                let mut points = vec![];
+
+                                points.append(&mut squeeze_through_pipe(
                                     grid,
                                     Direction::North,
                                     &Point { row: row + 1, col },
-                                );
-                                points.append(&mut squeeze_through_pipe(
-                                    grid,
-                                    Direction::West,
-                                    &Point { row, col: col + 1 },
                                 ));
+
+                                if col < grid[row].len() - 1 {
+                                    points.append(&mut squeeze_through_pipe(
+                                        grid,
+                                        Direction::West,
+                                        &Point { row, col: col + 1 },
+                                    ));
+                                }
 
                                 return points;
                             }
@@ -555,11 +600,16 @@ fn squeeze_through_pipe(grid: &[Vec<Tile>], from: Direction, point: &Point) -> V
                             // J?, J?
                             // -?, F?
                             EAST_WEST | SOUTH_EAST => {
-                                let mut points = squeeze_through_pipe(
-                                    grid,
-                                    Direction::West,
-                                    &Point { row, col: col + 1 },
-                                );
+                                let mut points = vec![];
+
+                                if col < grid[row].len() - 1 {
+                                    points.append(&mut squeeze_through_pipe(
+                                        grid,
+                                        Direction::West,
+                                        &Point { row, col: col + 1 },
+                                    ));
+                                }
+
                                 points.append(&mut squeeze_through_pipe(
                                     grid,
                                     Direction::South,
@@ -571,16 +621,22 @@ fn squeeze_through_pipe(grid: &[Vec<Tile>], from: Direction, point: &Point) -> V
                             // J?
                             // 7?
                             SOUTH_WEST => {
-                                let mut points = squeeze_through_pipe(
+                                let mut points = vec![];
+
+                                points.append(&mut squeeze_through_pipe(
                                     grid,
                                     Direction::North,
                                     &Point { row: row + 1, col },
-                                );
-                                points.append(&mut squeeze_through_pipe(
-                                    grid,
-                                    Direction::West,
-                                    &Point { row, col: col + 1 },
                                 ));
+
+                                if col < grid[row].len() - 1 {
+                                    points.append(&mut squeeze_through_pipe(
+                                        grid,
+                                        Direction::West,
+                                        &Point { row, col: col + 1 },
+                                    ));
+                                }
+
                                 points.append(&mut squeeze_through_pipe(
                                     grid,
                                     Direction::South,
@@ -600,6 +656,10 @@ fn squeeze_through_pipe(grid: &[Vec<Tile>], from: Direction, point: &Point) -> V
                 }
             }
             Direction::East => {
+                if row == grid.len() - 1 {
+                    return vec![];
+                }
+
                 let Tile {
                     pipe: adjacent_pipe,
                     classification: adjacent_classification,
@@ -614,24 +674,33 @@ fn squeeze_through_pipe(grid: &[Vec<Tile>], from: Direction, point: &Point) -> V
                             // ?J, ?J, ?-, ?-
                             // ?-, ?7, ?-, ?7
                             EAST_WEST | SOUTH_WEST => {
+                                if col == 0 {
+                                    return vec![];
+                                }
+
                                 col -= 1;
                             }
                             // ?J, ?-
                             // ?F, ?F
                             SOUTH_EAST => {
-                                let mut points = squeeze_through_pipe(
-                                    grid,
-                                    Direction::North,
-                                    &Point {
-                                        row: row + 1,
-                                        col: col - 1,
-                                    },
-                                );
-                                points.append(&mut squeeze_through_pipe(
-                                    grid,
-                                    Direction::East,
-                                    &Point { row, col: col - 1 },
-                                ));
+                                let mut points = vec![];
+
+                                if col > 0 {
+                                    points.append(&mut squeeze_through_pipe(
+                                        grid,
+                                        Direction::North,
+                                        &Point {
+                                            row: row + 1,
+                                            col: col - 1,
+                                        },
+                                    ));
+
+                                    points.append(&mut squeeze_through_pipe(
+                                        grid,
+                                        Direction::East,
+                                        &Point { row, col: col - 1 },
+                                    ));
+                                }
 
                                 return points;
                             }
@@ -645,40 +714,48 @@ fn squeeze_through_pipe(grid: &[Vec<Tile>], from: Direction, point: &Point) -> V
                             // ?L, ?L
                             // ?-, ?7
                             EAST_WEST | SOUTH_WEST => {
-                                let mut points = squeeze_through_pipe(
-                                    grid,
-                                    Direction::East,
-                                    &Point { row, col: col - 1 },
-                                );
-                                points.append(&mut squeeze_through_pipe(
-                                    grid,
-                                    Direction::South,
-                                    &Point { row, col: col - 1 },
-                                ));
+                                let mut points = vec![];
+
+                                if col > 0 {
+                                    points.append(&mut squeeze_through_pipe(
+                                        grid,
+                                        Direction::East,
+                                        &Point { row, col: col - 1 },
+                                    ));
+                                    points.append(&mut squeeze_through_pipe(
+                                        grid,
+                                        Direction::South,
+                                        &Point { row, col: col - 1 },
+                                    ));
+                                }
 
                                 return points;
                             }
                             // ?L
                             // ?F
                             SOUTH_EAST => {
-                                let mut points = squeeze_through_pipe(
-                                    grid,
-                                    Direction::North,
-                                    &Point {
-                                        row: row + 1,
-                                        col: col - 1,
-                                    },
-                                );
-                                points.append(&mut squeeze_through_pipe(
-                                    grid,
-                                    Direction::East,
-                                    &Point { row, col: col - 1 },
-                                ));
-                                points.append(&mut squeeze_through_pipe(
-                                    grid,
-                                    Direction::South,
-                                    &Point { row, col: col - 1 },
-                                ));
+                                let mut points = vec![];
+
+                                if col > 0 {
+                                    points.append(&mut squeeze_through_pipe(
+                                        grid,
+                                        Direction::North,
+                                        &Point {
+                                            row: row + 1,
+                                            col: col - 1,
+                                        },
+                                    ));
+                                    points.append(&mut squeeze_through_pipe(
+                                        grid,
+                                        Direction::East,
+                                        &Point { row, col: col - 1 },
+                                    ));
+                                    points.append(&mut squeeze_through_pipe(
+                                        grid,
+                                        Direction::South,
+                                        &Point { row, col: col - 1 },
+                                    ));
+                                }
 
                                 return points;
                             }
@@ -693,6 +770,10 @@ fn squeeze_through_pipe(grid: &[Vec<Tile>], from: Direction, point: &Point) -> V
                 }
             }
             Direction::South => {
+                if col == grid[row].len() - 1 {
+                    return vec![];
+                }
+
                 let Tile {
                     pipe: adjacent_pipe,
                     classification: adjacent_classification,
@@ -707,24 +788,32 @@ fn squeeze_through_pipe(grid: &[Vec<Tile>], from: Direction, point: &Point) -> V
                             // ??, ??, ??, ??
                             // J|, JL, ||, |L
                             NORTH_SOUTH | NORTH_EAST => {
+                                if row == 0 {
+                                    return vec![];
+                                }
+
                                 row -= 1;
                             }
                             // ??, ??
                             // JF, |F
                             SOUTH_EAST => {
-                                let mut points = squeeze_through_pipe(
-                                    grid,
-                                    Direction::South,
-                                    &Point { row: row - 1, col },
-                                );
-                                points.append(&mut squeeze_through_pipe(
-                                    grid,
-                                    Direction::West,
-                                    &Point {
-                                        row: row - 1,
-                                        col: col + 1,
-                                    },
-                                ));
+                                let mut points = vec![];
+
+                                if row > 0 {
+                                    points.append(&mut squeeze_through_pipe(
+                                        grid,
+                                        Direction::South,
+                                        &Point { row: row - 1, col },
+                                    ));
+                                    points.append(&mut squeeze_through_pipe(
+                                        grid,
+                                        Direction::West,
+                                        &Point {
+                                            row: row - 1,
+                                            col: col + 1,
+                                        },
+                                    ));
+                                }
 
                                 return points;
                             }
@@ -738,40 +827,48 @@ fn squeeze_through_pipe(grid: &[Vec<Tile>], from: Direction, point: &Point) -> V
                             // ??, ??, ??, ??
                             // 7|, 7L, 7|, 7L
                             NORTH_SOUTH | NORTH_EAST => {
-                                let mut points = squeeze_through_pipe(
-                                    grid,
-                                    Direction::South,
-                                    &Point { row: row - 1, col },
-                                );
-                                points.append(&mut squeeze_through_pipe(
-                                    grid,
-                                    Direction::East,
-                                    &Point { row: row - 1, col },
-                                ));
+                                let mut points = vec![];
+
+                                if row > 0 {
+                                    points.append(&mut squeeze_through_pipe(
+                                        grid,
+                                        Direction::South,
+                                        &Point { row: row - 1, col },
+                                    ));
+                                    points.append(&mut squeeze_through_pipe(
+                                        grid,
+                                        Direction::East,
+                                        &Point { row: row - 1, col },
+                                    ));
+                                }
 
                                 return points;
                             }
                             // ??
                             // 7F
                             SOUTH_EAST => {
-                                let mut points = squeeze_through_pipe(
-                                    grid,
-                                    Direction::South,
-                                    &Point { row: row - 1, col },
-                                );
-                                points.append(&mut squeeze_through_pipe(
-                                    grid,
-                                    Direction::West,
-                                    &Point {
-                                        row: row - 1,
-                                        col: col + 1,
-                                    },
-                                ));
-                                points.append(&mut squeeze_through_pipe(
-                                    grid,
-                                    Direction::East,
-                                    &Point { row: row - 1, col },
-                                ));
+                                let mut points = vec![];
+
+                                if row > 0 {
+                                    points.append(&mut squeeze_through_pipe(
+                                        grid,
+                                        Direction::South,
+                                        &Point { row: row - 1, col },
+                                    ));
+                                    points.append(&mut squeeze_through_pipe(
+                                        grid,
+                                        Direction::West,
+                                        &Point {
+                                            row: row - 1,
+                                            col: col + 1,
+                                        },
+                                    ));
+                                    points.append(&mut squeeze_through_pipe(
+                                        grid,
+                                        Direction::East,
+                                        &Point { row: row - 1, col },
+                                    ));
+                                }
 
                                 return points;
                             }
