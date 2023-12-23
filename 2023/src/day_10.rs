@@ -64,23 +64,6 @@ pub fn part_2(contents: &str) -> Result<u64, String> {
         }
     }
 
-    for line in &grid {
-        for tile in line {
-            print!(
-                "{}",
-                match tile.classification {
-                    PipeClassification::Unknown => '?',
-                    PipeClassification::Inside => 'I',
-                    PipeClassification::Outside => 'O',
-                    PipeClassification::Loop => tile.pipe,
-                }
-            );
-        }
-        println!();
-    }
-
-    // TODO: Why is this not the same as enclosed_tiles?
-    // Ok(get_count(&grid, PipeClassification::Inside))
     Ok(enclosed_tiles)
 }
 
@@ -229,7 +212,6 @@ fn traverse_loop(
     }
 }
 
-// TODO: expand this to take some matcher
 fn get_count(grid: &[Vec<Tile>], classification: PipeClassification) -> u64 {
     let mut count = 0;
     for row in grid {
@@ -264,6 +246,7 @@ fn classify_point(grid: &mut [Vec<Tile>], point: Point) -> u64 {
                 // Can't squeeze past the edge of the grid.
                 continue;
             } else if classification == PipeClassification::Unknown {
+                // We've found a path outside!
                 for (r, c) in &already_searched {
                     grid[*r][*c].classification = PipeClassification::Outside;
                 }
@@ -342,6 +325,8 @@ fn classify_point(grid: &mut [Vec<Tile>], point: Point) -> u64 {
         }
     }
 
+    // Reaching here means we've exhausted points_to_search,
+    // which means we didn't find a way out.
     let mut newly_inside_count = 0;
     for (r, c) in &already_searched {
         if grid[*r][*c].classification == PipeClassification::Unknown {
@@ -354,77 +339,6 @@ fn classify_point(grid: &mut [Vec<Tile>], point: Point) -> u64 {
 
 fn squeeze_through_pipe(grid: &[Vec<Tile>], from: Direction, point: &Point) -> Vec<Point> {
     let Point { mut row, mut col } = *point;
-
-    // OOOOOOOOOOOOOOOOOOOO
-    // OF----7F7F7F7F-7OOOO
-    // O|F--7||||||||FJOOOO
-    // O||OFJ||||||||L7OOOO
-    // FJL7L7LJLJ||LJIL-7OO
-    // L--JOL7IIILJS7F-7L7O
-    // OOOOF-JIIF7FJ|L7L7L7
-    // OOOOL7IF7||L7|IL7L7|
-    // OOOOO|FJLJ|FJ|F7|OLJ
-    // OOOOFJL-7O||O||||OOO
-    // OOOOL---JOLJOLJLJOOO
-
-    //|   F----7
-    //|   |   O|
-    //|   L---7|
-    //|       ||  F-7
-    //S  .    |L--JO|
-    //|       |F----J
-    //|       ||
-    //L-------JL
-    //        OO
-
-    // Counterpoint to hardcoding + 1.
-    // (Unless we also check for squeezes in the diagonal directions??)
-    //|      F----7
-    //|      |O   |
-    //|      |F---J
-    //|      ||  F-7
-    //S      |L--JO|
-    //|      |F----J
-    //|      ||
-    //L------JL
-    //       OO
-
-    //
-    //---------J0
-    //----------7
-
-    // The "7L from the north" case.
-    //|   F----7
-    //|   |   O|
-    //|   L---7|
-    //|   F---J|  F-7
-    //S   L---7L--JO|
-    //|       |F----J
-    //|       ||
-    //L-------JL
-    //        OO
-
-    // 4-way intersection!
-    //|   F----7
-    //|   |   O|
-    //|   L---7|  F-7
-    //|   F---JL--JO|
-    //S   L---7F----J
-    //|       ||
-    //|       ||
-    //L-------JL
-    //        OO
-
-    // Why we need to search upwards.
-    //|   F----7
-    //|   |   O|    F---7
-    //|   L---7|    |F-7|
-    //|   F---J|  F-J|
-    //S   L---7L--JOFJ
-    //|       |F----J
-    //|       ||
-    //L-------JL
-    //        OO
 
     loop {
         let tile = grid[row][col];
