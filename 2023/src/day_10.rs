@@ -443,7 +443,7 @@ fn squeeze_through_pipe(grid: &[Vec<Tile>], from: Direction, point: &Point) -> V
                     classification: adjacent_classification,
                 } = grid[row][col + 1];
                 if adjacent_classification != PipeClassification::Loop {
-                    return vec![Point { row, col }];
+                    return vec![Point { row, col: col + 1 }];
                 }
 
                 match tile.pipe {
@@ -554,7 +554,7 @@ fn squeeze_through_pipe(grid: &[Vec<Tile>], from: Direction, point: &Point) -> V
                     classification: adjacent_classification,
                 } = grid[row + 1][col];
                 if adjacent_classification != PipeClassification::Loop {
-                    return vec![Point { row, col }];
+                    return vec![Point { row: row + 1, col }];
                 }
 
                 match tile.pipe {
@@ -665,7 +665,7 @@ fn squeeze_through_pipe(grid: &[Vec<Tile>], from: Direction, point: &Point) -> V
                     classification: adjacent_classification,
                 } = grid[row + 1][col];
                 if adjacent_classification != PipeClassification::Loop {
-                    return vec![Point { row, col }];
+                    return vec![Point { row: row + 1, col }];
                 }
 
                 match tile.pipe {
@@ -779,7 +779,7 @@ fn squeeze_through_pipe(grid: &[Vec<Tile>], from: Direction, point: &Point) -> V
                     classification: adjacent_classification,
                 } = grid[row][col + 1];
                 if adjacent_classification != PipeClassification::Loop {
-                    return vec![Point { row, col }];
+                    return vec![Point { row, col: col + 1 }];
                 }
 
                 match tile.pipe {
